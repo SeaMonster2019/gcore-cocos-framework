@@ -14,3 +14,4 @@ export * from "./components/prefab/prefab-list";
 export * from "./components/prefab/prefab-pool";
 export * from "./components/vScroll/vscroll-view-item";
 export * from "./components/vScroll/vscroll-view";
+export * from "./components/render/shader2d";
