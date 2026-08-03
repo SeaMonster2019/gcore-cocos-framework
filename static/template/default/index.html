@@ -40,8 +40,14 @@
 
         <!-- Tab 2: 多语言转表 -->
         <div class="tab-pane" id="tab-2">
-            <h2>多语言转表 (Luban)</h2>
-            <p class="tab-desc">读取业务层多语言配置，生成多语言二进制包与本地化 TypeScript 代码。</p>
+            <div class="pane-header-row">
+                <div>
+                    <h2>多语言转表 (Luban)</h2>
+                    <p class="tab-desc">读取业务层多语言配置，导出多语言二进制数据包与本地化 TypeScript 代码。</p>
+                </div>
+                <!-- 按钮 A：管理语言列表 -->
+                <button id="manage-lang-btn" class="action-btn" type="button">⚙ 语言管理</button>
+            </div>
 
             <div class="form-group">
                 <label>配置文件 (luban.conf)：</label>
@@ -59,27 +65,11 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>中文数据输出目录 (pack-zh-Hans)：</label>
-                <div class="file-picker">
-                    <input id="lang-data-zh" type="text" placeholder="assets/language/pack-zh-Hans" />
-                    <button id="lang-data-zh-btn" type="button">选择文件夹</button>
-                </div>
-            </div>
+            <!-- 动态渲染各语言数据输出目录 -->
+            <div id="dynamic-lang-dirs"></div>
 
-            <div class="form-group">
-                <label>英文数据输出目录 (pack-en)：</label>
-                <div class="file-picker">
-                    <input id="lang-data-en" type="text" placeholder="assets/language/pack-en" />
-                    <button id="lang-data-en-btn" type="button">选择文件夹</button>
-                </div>
-            </div>
-
-            <div class="btn-row">
-                <button id="gen-lang-btn" class="primary-btn" type="button">全量生成多语言 (lang)</button>
-                <button id="gen-lang-zh-btn" type="button">仅生成中文 (zh-Hans)</button>
-                <button id="gen-lang-en-btn" type="button">仅生成英文 (en)</button>
-            </div>
+            <!-- 动态渲染转表按钮（全量生成 & 通用单语言生成） -->
+            <div id="dynamic-lang-btns" class="btn-row"></div>
         </div>
     </div>
 
@@ -90,5 +80,40 @@
             <button id="clear-log-btn" class="small-btn" type="button">清空日志</button>
         </div>
         <pre id="status-area"></pre>
+    </div>
+
+    <!-- 弹窗 B：语言管理弹窗 -->
+    <div id="lang-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>语言列表管理</h3>
+                <button id="modal-close-btn" class="close-btn" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="add-lang-row">
+                    <input id="new-lang-code" type="text" placeholder="语言代码 (如: zh-Hans, en, ja)" />
+                    <input id="new-lang-name" type="text" placeholder="语言名称 (如: 中文, 英文, 日文)" />
+                    <button id="add-lang-btn" class="primary-btn" type="button">添加语言</button>
+                </div>
+                <div class="lang-table-wrapper">
+                    <table class="lang-table">
+                        <thead>
+                            <tr>
+                                <th>语言代码 (target)</th>
+                                <th>语言名称</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lang-list-tbody">
+                            <!-- 动态行 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-reset-btn" type="button">重置为中英文</button>
+                <button id="modal-save-btn" class="primary-btn" type="button">保存设置</button>
+            </div>
+        </div>
     </div>
 </div>

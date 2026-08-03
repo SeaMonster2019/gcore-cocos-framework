@@ -5,6 +5,7 @@
     flex-direction: column;
     overflow: hidden;
     box-sizing: border-box;
+    position: relative;
 }
 
 .tab-header {
@@ -49,6 +50,13 @@
 
 .tab-pane.active {
     display: block;
+}
+
+.pane-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
 }
 
 .tab-pane h2 {
@@ -127,9 +135,139 @@ button:disabled {
     background: #025aa5;
 }
 
+.action-btn {
+    background: #5bc0de;
+    color: #ffffff;
+    border-color: #46b8da;
+}
+
+.action-btn:hover {
+    background: #31b0d5;
+}
+
+.danger-btn {
+    background: #d9534f;
+    color: #ffffff;
+    border-color: #d43f3a;
+    padding: 3px 8px;
+    font-size: 11px;
+}
+
+.danger-btn:hover {
+    background: #c9302c;
+}
+
 .small-btn {
     padding: 2px 8px;
     font-size: 11px;
+}
+
+/* Modal B Styling */
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal-dialog {
+    background: var(--color-normal-fill);
+    border: 1px solid var(--color-normal-border);
+    border-radius: 6px;
+    width: 460px;
+    max-width: 92%;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: var(--color-normal-fill-weakest);
+    border-bottom: 1px solid var(--color-normal-border);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-normal-contrast);
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--color-normal-contrast);
+}
+
+.modal-body {
+    padding: 16px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.add-lang-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.add-lang-row input {
+    flex: 1;
+    padding: 5px 8px;
+    font-size: 12px;
+    border: 1px solid var(--color-normal-border);
+    border-radius: 4px;
+    background: var(--color-normal-fill-weakest);
+    color: var(--color-normal-contrast);
+}
+
+.lang-table-wrapper {
+    border: 1px solid var(--color-normal-border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.lang-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.lang-table th, .lang-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--color-normal-border);
+    text-align: left;
+}
+
+.lang-table th {
+    background: var(--color-normal-fill-weakest);
+    color: var(--color-normal-contrast);
+    font-weight: bold;
+}
+
+.lang-table td {
+    color: var(--color-normal-contrast);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 16px;
+    background: var(--color-normal-fill-weakest);
+    border-top: 1px solid var(--color-normal-border);
 }
 
 .log-footer {
