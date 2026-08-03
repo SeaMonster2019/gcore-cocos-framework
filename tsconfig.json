@@ -19,6 +19,9 @@
             "@cocos/creator-types/editor",
         ]
     },
+    "include": [
+        "source/**/*"
+    ],
     "exclude": [
         "node_modules",
         "../node_modules"

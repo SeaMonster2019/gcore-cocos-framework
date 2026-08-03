@@ -1,7 +1,7 @@
 /* eslint-disable vue/one-component-per-file */
 
 import { encode } from '@msgpack/msgpack';
-import { readFileSync } from 'fs-extra';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 /**
  * @zh 如果希望兼容 3.3 之前的版本可以使用下方的代码
@@ -96,7 +96,7 @@ function setupTabSwitcher(panel: any, initialTab: TabName = 'tab-1') {
 function initI18nTool(panel: any) {
     // require modules
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const fs = require('fs-extra');
+    const fs = require('fs');
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const path = require('path');
     // encode imported statically at module top
@@ -203,7 +203,11 @@ function initI18nTool(panel: any) {
                 continue;
             }
             if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.msgpack') {
-                fs.removeSync(fullPath);
+                if (fs.rmSync) {
+                    fs.rmSync(fullPath, { recursive: true, force: true });
+                } else {
+                    fs.unlinkSync(fullPath);
+                }
             }
         }
     };
@@ -335,7 +339,7 @@ function initI18nTool(panel: any) {
             try {
                 appendStatus(`清理旧的 .msgpack 文件 ${langDir}`);
                 removeMsgpackFiles(langDir);
-                fs.ensureDirSync(langDir);
+                fs.mkdirSync(langDir, { recursive: true });
                 const outFile = path.join(langDir, `${lf}.msgpack`);
                 const packed = encode(overallLangMaps[lf]);
                 fs.writeFileSync(outFile, Buffer.from(packed));
