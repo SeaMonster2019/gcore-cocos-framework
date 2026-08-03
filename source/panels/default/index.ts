@@ -1,79 +1,161 @@
-/* eslint-disable vue/one-component-per-file */
-
-import { encode } from '@msgpack/msgpack';
+import { exec } from 'child_process';
 import { readFileSync } from 'fs';
-import { join } from 'path';
-/**
- * @zh 如果希望兼容 3.3 之前的版本可以使用下方的代码
- * @en You can add the code below if you want compatibility with versions prior to 3.3
- */
-// Editor.Panel.define = Editor.Panel.define || function(options: any) { return options }
+import { isAbsolute, join, relative, resolve } from 'path';
 
 type TabName = 'tab-1' | 'tab-2';
+const STORAGE_KEY = 'gcore-framework.luban-tool.state';
 
-const TAB_IDS: TabName[] = ['tab-1', 'tab-2'];
-const UI_STATE_KEY = 'gcore-framework.i18n-tool.state';
-
-const DEFAULT_UI_STATE: UiState = {
-    srcRoot: '',
-    outRoot: '',
-    headerText: 'Key,Chinese,English',
-    activeTab: 'tab-1',
-};
-
-let memoryUiState: UiState = { ...DEFAULT_UI_STATE };
-
-type UiState = {
-    srcRoot: string;
-    outRoot: string;
-    headerText: string;
+interface LubanToolState {
     activeTab: TabName;
+    cfgConfFile: string;
+    cfgCodeDir: string;
+    cfgDataDir: string;
+    langConfFile: string;
+    langCodeDir: string;
+    langDataDirZh: string;
+    langDataDirEn: string;
+}
+
+const DEFAULT_STATE: LubanToolState = {
+    activeTab: 'tab-1',
+    cfgConfFile: 'design/配置/配置表/luban.conf',
+    cfgCodeDir: 'assets/scripts/config/base',
+    cfgDataDir: 'assets/resources/config',
+    langConfFile: 'design/配置/多语言/luban.conf',
+    langCodeDir: 'assets/scripts/localization/base',
+    langDataDirZh: 'assets/language/pack-zh-Hans',
+    langDataDirEn: 'assets/language/pack-en',
 };
 
-function loadUiState(): UiState {
+function getWorkspacePath(): string {
+    const editor = (globalThis as any).Editor;
+    if (editor && editor.Project && editor.Project.path) {
+        return editor.Project.path;
+    }
+    return resolve(__dirname, '../../../../');
+}
+
+function normalizePathForStorage(inputPath: string, workspace: string): string {
+    if (!inputPath) return '';
+    const cleanPath = inputPath.trim();
+    if (isAbsolute(cleanPath) && cleanPath.startsWith(workspace)) {
+        return relative(workspace, cleanPath).replace(/\\/g, '/');
+    }
+    return cleanPath.replace(/\\/g, '/');
+}
+
+function resolvePathForExec(inputPath: string, workspace: string): string {
+    const cleanPath = inputPath.trim();
+    if (isAbsolute(cleanPath)) {
+        return cleanPath;
+    }
+    return join(workspace, cleanPath);
+}
+
+function loadState(): LubanToolState {
     try {
         if (typeof localStorage !== 'undefined') {
-            const raw = localStorage.getItem(UI_STATE_KEY);
+            const raw = localStorage.getItem(STORAGE_KEY);
             if (raw) {
-                const parsed = JSON.parse(raw) as Partial<UiState>;
+                const parsed = JSON.parse(raw) as Partial<LubanToolState>;
                 return {
-                    srcRoot: parsed.srcRoot ?? DEFAULT_UI_STATE.srcRoot,
-                    outRoot: parsed.outRoot ?? DEFAULT_UI_STATE.outRoot,
-                    headerText: parsed.headerText ?? DEFAULT_UI_STATE.headerText,
                     activeTab: parsed.activeTab === 'tab-2' ? 'tab-2' : 'tab-1',
+                    cfgConfFile: parsed.cfgConfFile ?? DEFAULT_STATE.cfgConfFile,
+                    cfgCodeDir: parsed.cfgCodeDir ?? DEFAULT_STATE.cfgCodeDir,
+                    cfgDataDir: parsed.cfgDataDir ?? DEFAULT_STATE.cfgDataDir,
+                    langConfFile: parsed.langConfFile ?? DEFAULT_STATE.langConfFile,
+                    langCodeDir: parsed.langCodeDir ?? DEFAULT_STATE.langCodeDir,
+                    langDataDirZh: parsed.langDataDirZh ?? DEFAULT_STATE.langDataDirZh,
+                    langDataDirEn: parsed.langDataDirEn ?? DEFAULT_STATE.langDataDirEn,
                 };
             }
         }
-    } catch (error) {
-        console.warn('[i18n-tool] load state failed', error);
+    } catch (e) {
+        console.warn('[gcore-luban] load state failed', e);
     }
-
-    return { ...memoryUiState };
+    return { ...DEFAULT_STATE };
 }
 
-function saveUiState(patch: Partial<UiState>) {
-    const current = loadUiState();
+function saveState(patch: Partial<LubanToolState>) {
+    const current = loadState();
     const next = { ...current, ...patch };
-    memoryUiState = { ...next };
     try {
         if (typeof localStorage !== 'undefined') {
-            localStorage.setItem(UI_STATE_KEY, JSON.stringify(next));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         }
-    } catch (error) {
-        console.warn('[i18n-tool] save state failed', error);
+    } catch (e) {
+        console.warn('[gcore-luban] save state failed', e);
     }
+}
+
+function escapeHtml(s: string): string {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function queryElement<T extends HTMLElement = HTMLElement>(panel: any, selector: string): T | null {
+    if (!panel) return null;
+
+    // 1. Check shadowRoot
+    if (panel.shadowRoot && typeof panel.shadowRoot.querySelector === 'function') {
+        const found = panel.shadowRoot.querySelector(selector);
+        if (found) return found as T;
+    }
+
+    // 2. Check panel.root
+    if (panel.root && typeof panel.root.querySelector === 'function') {
+        const found = panel.root.querySelector(selector);
+        if (found) return found as T;
+    }
+
+    // 3. Check parent container of tabContent/tabHeader
+    const rootContainer =
+        (panel.$ && panel.$.tabContent && panel.$.tabContent.parentElement) ||
+        (panel.$ && panel.$.tabHeader && panel.$.tabHeader.parentElement);
+
+    if (rootContainer && typeof rootContainer.querySelector === 'function') {
+        const found = rootContainer.querySelector(selector);
+        if (found) return found as T;
+    }
+
+    // 4. Search within $ elements
+    if (panel.$) {
+        for (const k of Object.keys(panel.$)) {
+            const el = panel.$[k];
+            if (el && typeof el.querySelector === 'function') {
+                const found = el.querySelector(selector);
+                if (found) return found as T;
+            }
+        }
+    }
+
+    // 5. Check direct querySelector
+    if (typeof panel.querySelector === 'function') {
+        const found = panel.querySelector(selector);
+        if (found) return found as T;
+    }
+
+    return null;
 }
 
 function setupTabSwitcher(panel: any, initialTab: TabName = 'tab-1') {
-    const tabButtons = panel.$.tabHeader.querySelectorAll('.tab-btn');
-    const tabPanes = panel.$.tabContent.querySelectorAll('.tab-pane');
+    const tabHeader = (panel.$ && panel.$.tabHeader) || queryElement(panel, '.tab-header');
+    if (!tabHeader) return;
+
+    const tabButtons = tabHeader.querySelectorAll('.tab-btn');
+    const tabContent = (panel.$ && panel.$.tabContent) || queryElement(panel, '.tab-content');
+    const tabPanes = tabContent ? tabContent.querySelectorAll('.tab-pane') : [];
 
     const activateTab = (tabId: TabName) => {
         tabButtons.forEach((button: HTMLElement) => button.classList.remove('active'));
         tabPanes.forEach((pane: HTMLElement) => pane.classList.remove('active'));
 
-        const activeButton = panel.$.tabHeader.querySelector(`.tab-btn[data-tab="${tabId}"]`) as HTMLElement | null;
-        const activePane = panel.$.tabContent.querySelector(`#${tabId}`) as HTMLElement | null;
+        const activeButton = tabHeader.querySelector(`.tab-btn[data-tab="${tabId}"]`) as HTMLElement | null;
+        const activePane = tabContent ? (tabContent.querySelector(`#${tabId}`) as HTMLElement | null) : null;
 
         activeButton?.classList.add('active');
         activePane?.classList.add('active');
@@ -82,69 +164,113 @@ function setupTabSwitcher(panel: any, initialTab: TabName = 'tab-1') {
     tabButtons.forEach((button: HTMLElement) => {
         button.addEventListener('click', () => {
             const tabId = button.getAttribute('data-tab') as TabName | null;
-            if (!tabId || !TAB_IDS.includes(tabId)) {
+            if (!tabId || (tabId !== 'tab-1' && tabId !== 'tab-2')) {
                 return;
             }
             activateTab(tabId);
-            saveUiState({ activeTab: tabId });
+            saveState({ activeTab: tabId });
         });
     });
 
     activateTab(initialTab);
 }
 
-function initI18nTool(panel: any) {
-    // require modules
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const fs = require('fs');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const path = require('path');
-    // encode imported statically at module top
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const Papa = require('papaparse');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const XLSX = require('xlsx');
+function initLubanTools(panel: any) {
+    const workspace = getWorkspacePath();
+    const state = loadState();
 
-    const srcBtn = panel.$.tabContent.querySelector('#src-folder-btn') as HTMLButtonElement | null;
-    const outBtn = panel.$.tabContent.querySelector('#out-folder-btn') as HTMLButtonElement | null;
-    const srcPathInput = panel.$.tabContent.querySelector('#src-folder-path') as HTMLInputElement | null;
-    const outPathInput = panel.$.tabContent.querySelector('#out-folder-path') as HTMLInputElement | null;
-    const headerInput = panel.$.tabContent.querySelector('#header-input') as HTMLInputElement | null;
-    const dupCheck = panel.$.tabContent.querySelector('#dup-check') as HTMLInputElement | null;
-    const processBtn = panel.$.tabContent.querySelector('#process-btn') as HTMLButtonElement | null;
-    const getEditor = () => (globalThis as any).Editor;
-    const statusArea = panel.$.tabContent.querySelector('#status-area') as HTMLElement | null;
+    // Elements
+    const statusArea = (panel.$ && panel.$.statusArea) || queryElement<HTMLElement>(panel, '#status-area');
 
-    const applyState = () => {
-        const state = loadUiState();
-        if (srcPathInput) {
-            srcPathInput.value = state.srcRoot;
-        }
-        if (outPathInput) {
-            outPathInput.value = state.outRoot;
-        }
-        if (headerInput) {
-            headerInput.value = state.headerText;
-        }
-        if (dupCheck) {
-            dupCheck.checked = true;
+    // Tab 1 Elements
+    const cfgConfFileInp = (panel.$ && panel.$.cfgConfFile) || queryElement<HTMLInputElement>(panel, '#cfg-conf-file');
+    const cfgConfBtn = (panel.$ && panel.$.cfgConfBtn) || queryElement<HTMLButtonElement>(panel, '#cfg-conf-btn');
+    const cfgCodeDirInp = (panel.$ && panel.$.cfgCodeDir) || queryElement<HTMLInputElement>(panel, '#cfg-code-dir');
+    const cfgCodeBtn = (panel.$ && panel.$.cfgCodeBtn) || queryElement<HTMLButtonElement>(panel, '#cfg-code-btn');
+    const cfgDataDirInp = (panel.$ && panel.$.cfgDataDir) || queryElement<HTMLInputElement>(panel, '#cfg-data-dir');
+    const cfgDataBtn = (panel.$ && panel.$.cfgDataBtn) || queryElement<HTMLButtonElement>(panel, '#cfg-data-btn');
+    const genCfgBtn = (panel.$ && panel.$.genCfgBtn) || queryElement<HTMLButtonElement>(panel, '#gen-cfg-btn');
+
+    // Tab 2 Elements
+    const langConfFileInp = (panel.$ && panel.$.langConfFile) || queryElement<HTMLInputElement>(panel, '#lang-conf-file');
+    const langConfBtn = (panel.$ && panel.$.langConfBtn) || queryElement<HTMLButtonElement>(panel, '#lang-conf-btn');
+    const langCodeDirInp = (panel.$ && panel.$.langCodeDir) || queryElement<HTMLInputElement>(panel, '#lang-code-dir');
+    const langCodeBtn = (panel.$ && panel.$.langCodeBtn) || queryElement<HTMLButtonElement>(panel, '#lang-code-btn');
+    const langDataZhInp = (panel.$ && panel.$.langDataZh) || queryElement<HTMLInputElement>(panel, '#lang-data-zh');
+    const langDataZhBtn = (panel.$ && panel.$.langDataZhBtn) || queryElement<HTMLButtonElement>(panel, '#lang-data-zh-btn');
+    const langDataEnInp = (panel.$ && panel.$.langDataEn) || queryElement<HTMLInputElement>(panel, '#lang-data-en');
+    const langDataEnBtn = (panel.$ && panel.$.langDataEnBtn) || queryElement<HTMLButtonElement>(panel, '#lang-data-en-btn');
+    const genLangBtn = (panel.$ && panel.$.genLangBtn) || queryElement<HTMLButtonElement>(panel, '#gen-lang-btn');
+    const genLangZhBtn = (panel.$ && panel.$.genLangZhBtn) || queryElement<HTMLButtonElement>(panel, '#gen-lang-zh-btn');
+    const genLangEnBtn = (panel.$ && panel.$.genLangEnBtn) || queryElement<HTMLButtonElement>(panel, '#gen-lang-en-btn');
+
+    const clearLogBtn = (panel.$ && panel.$.clearLogBtn) || queryElement<HTMLButtonElement>(panel, '#clear-log-btn');
+
+    // Logging helper
+    const appendLog = (msg: string, type: 'info' | 'success' | 'error' = 'info') => {
+        const targetArea = (panel.$ && panel.$.statusArea) || statusArea || queryElement<HTMLElement>(panel, '#status-area');
+        if (targetArea) {
+            const cls = type === 'error' ? 'status-error' : type === 'success' ? 'status-success' : 'status-info';
+            targetArea.innerHTML += `<div class="${cls}">${escapeHtml(msg)}</div>`;
+            targetArea.scrollTop = targetArea.scrollHeight;
         }
     };
 
-    const pickFolder = async (title: string, currentPath: string) => {
-        const editor = getEditor();
+    const clearLog = () => {
+        const targetArea = (panel.$ && panel.$.statusArea) || statusArea || queryElement<HTMLElement>(panel, '#status-area');
+        if (targetArea) {
+            targetArea.textContent = '';
+        }
+    };
+
+    // Apply saved state to inputs
+    if (cfgConfFileInp) cfgConfFileInp.value = state.cfgConfFile;
+    if (cfgCodeDirInp) cfgCodeDirInp.value = state.cfgCodeDir;
+    if (cfgDataDirInp) cfgDataDirInp.value = state.cfgDataDir;
+
+    if (langConfFileInp) langConfFileInp.value = state.langConfFile;
+    if (langCodeDirInp) langCodeDirInp.value = state.langCodeDir;
+    if (langDataZhInp) langDataZhInp.value = state.langDataDirZh;
+    if (langDataEnInp) langDataEnInp.value = state.langDataDirEn;
+
+    // Save change listeners
+    const bindInputChange = (inp: HTMLInputElement | null, stateKey: keyof LubanToolState) => {
+        if (!inp) return;
+        inp.addEventListener('input', () => {
+            const pathVal = normalizePathForStorage(inp.value, workspace);
+            saveState({ [stateKey]: pathVal });
+        });
+    };
+
+    bindInputChange(cfgConfFileInp, 'cfgConfFile');
+    bindInputChange(cfgCodeDirInp, 'cfgCodeDir');
+    bindInputChange(cfgDataDirInp, 'cfgDataDir');
+    bindInputChange(langConfFileInp, 'langConfFile');
+    bindInputChange(langCodeDirInp, 'langCodeDir');
+    bindInputChange(langDataZhInp, 'langDataDirZh');
+    bindInputChange(langDataEnInp, 'langDataDirEn');
+
+    // Dialog picker helpers
+    const pickPath = async (title: string, defaultPath: string, type: 'file' | 'directory'): Promise<string> => {
+        const editor = (globalThis as any).Editor;
         if (!editor?.Dialog?.select) {
             throw new Error('Editor.Dialog.select 不可用');
         }
 
-        const result = await editor.Dialog.select({
+        const resolvedDefault = resolvePathForExec(defaultPath || '', workspace);
+        const options: any = {
             title,
-            type: 'directory',
-            path: currentPath || undefined,
+            type,
+            path: resolvedDefault || undefined,
             button: '选择',
             multi: false,
-        });
+        };
 
+        if (type === 'file') {
+            options.filters = [{ name: 'Luban Conf', extensions: ['conf', 'json'] }];
+        }
+
+        const result = await editor.Dialog.select(options);
         if (!result || result.canceled || !result.filePaths || result.filePaths.length === 0) {
             return '';
         }
@@ -152,271 +278,145 @@ function initI18nTool(panel: any) {
         return result.filePaths[0] as string;
     };
 
-    const updateAndSave = (patch: Partial<UiState>) => {
-        const current = loadUiState();
-        const next = { ...current, ...patch };
-        if (srcPathInput && typeof next.srcRoot === 'string') {
-            srcPathInput.value = next.srcRoot;
-        }
-        if (outPathInput && typeof next.outRoot === 'string') {
-            outPathInput.value = next.outRoot;
-        }
-        if (headerInput && typeof next.headerText === 'string') {
-            headerInput.value = next.headerText;
-        }
-        saveUiState(next);
-    };
-
-    const escapeHtml = (s: string) => {
-        return String(s)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    };
-
-    const appendStatus = (msg: string, type: 'info' | 'error' = 'info') => {
-        if (statusArea) {
-            const cls = type === 'error' ? 'status-error' : 'status-info';
-            statusArea.innerHTML += `<div class="${cls}">${escapeHtml(msg)}</div>`;
-            statusArea.scrollTop = statusArea.scrollHeight;
-        }
-        if (type === 'error') {
-            console.error('[i18n-tool]', msg);
-        } else {
-            console.log('[i18n-tool]', msg);
-        }
-    };
-
-    const removeMsgpackFiles = (dir: string) => {
-        if (!fs.existsSync(dir)) {
-            return;
-        }
-
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        for (let i = 0; i < entries.length; i++) {
-            const entry = entries[i];
-            const fullPath = path.join(dir, entry.name);
-            if (entry.isDirectory()) {
-                removeMsgpackFiles(fullPath);
-                continue;
+    const bindPickerBtn = (
+        btn: HTMLButtonElement | null,
+        inp: HTMLInputElement | null,
+        title: string,
+        type: 'file' | 'directory',
+        stateKey: keyof LubanToolState
+    ) => {
+        if (!btn || !inp) return;
+        btn.addEventListener('click', async () => {
+            try {
+                const picked = await pickPath(title, inp.value.trim(), type);
+                if (picked) {
+                    const normalized = normalizePathForStorage(picked, workspace);
+                    inp.value = normalized;
+                    saveState({ [stateKey]: normalized });
+                    appendLog(`已选择: ${normalized}`);
+                }
+            } catch (e) {
+                appendLog(`选择路径失败: ${(e as any)?.message ?? String(e)}`, 'error');
             }
-            if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.msgpack') {
-                if (fs.rmSync) {
-                    fs.rmSync(fullPath, { recursive: true, force: true });
+        });
+    };
+
+    bindPickerBtn(cfgConfBtn, cfgConfFileInp, '选择配置表 luban.conf 文件', 'file', 'cfgConfFile');
+    bindPickerBtn(cfgCodeBtn, cfgCodeDirInp, '选择代码输出文件夹', 'directory', 'cfgCodeDir');
+    bindPickerBtn(cfgDataBtn, cfgDataDirInp, '选择数据输出文件夹', 'directory', 'cfgDataDir');
+
+    bindPickerBtn(langConfBtn, langConfFileInp, '选择多语言 luban.conf 文件', 'file', 'langConfFile');
+    bindPickerBtn(langCodeBtn, langCodeDirInp, '选择多语言代码输出文件夹', 'directory', 'langCodeDir');
+    bindPickerBtn(langDataZhBtn, langDataZhInp, '选择中文数据输出文件夹', 'directory', 'langDataDirZh');
+    bindPickerBtn(langDataEnBtn, langDataEnInp, '选择英文数据输出文件夹', 'directory', 'langDataDirEn');
+
+    const setButtonsDisabled = (disabled: boolean) => {
+        const buttons = [genCfgBtn, genLangBtn, genLangZhBtn, genLangEnBtn];
+        buttons.forEach((b) => {
+            if (b) b.disabled = disabled;
+        });
+    };
+
+    const runLubanCmd = (confFile: string, target: string, outputCodeDir: string, outputDataDir: string): Promise<boolean> => {
+        return new Promise((resolvePromise) => {
+            const lubanDll = join(workspace, 'extensions/gcore-framework/tools/luban/Luban.dll');
+            const confPath = resolvePathForExec(confFile, workspace);
+            const codePath = resolvePathForExec(outputCodeDir, workspace);
+            const dataPath = resolvePathForExec(outputDataDir, workspace);
+
+            const command = `dotnet "${lubanDll}" -t ${target} -c typescript-bin -d bin --conf "${confPath}" -x outputCodeDir="${codePath}" -x outputDataDir="${dataPath}" -x tableImporter.tableNameFormat={0}Tbl -x tableImporter.valueTypeNameFormat={0}Cfg -x bin.fileExt=bin`;
+
+            appendLog(`执行 Luban 转表命令 [target=${target}]...`);
+            appendLog(`Command: ${command}`);
+
+            exec(command, { cwd: workspace }, (error, stdout, stderr) => {
+                if (stdout) {
+                    appendLog(stdout.trim());
+                }
+                if (stderr) {
+                    appendLog(stderr.trim(), 'error');
+                }
+                if (error) {
+                    appendLog(`转表执行失败: ${error.message}`, 'error');
+                    resolvePromise(false);
                 } else {
-                    fs.unlinkSync(fullPath);
+                    appendLog(`[${target}] 转表完成！`, 'success');
+                    resolvePromise(true);
                 }
-            }
-        }
+            });
+        });
     };
 
-    async function parseFile(filePath: string) {
-        const ext = path.extname(filePath).toLowerCase();
-        if (ext === '.csv') {
-            const txt = fs.readFileSync(filePath, 'utf8');
-            const parsed = Papa.parse(txt, { header: true, skipEmptyLines: true });
-            return parsed.data;
-        }
-        if (ext === '.xlsx' || ext === '.xls') {
-            const workbook = XLSX.readFile(filePath);
-            const sheetName = workbook.SheetNames[0];
-            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
-            return rows;
-        }
-        return null;
-    }
-
-    async function doProcess() {
-        if (!srcPathInput || !outPathInput || !headerInput) {
-            appendStatus('控件未就绪');
-            return;
-        }
-
-        const headerText = headerInput.value.trim();
-        if (!headerText) {
-            appendStatus('请填写字段头，例如：Key,Chinese,English');
-            return;
-        }
-        const headers = headerText.split(/\s*[,，]\s*/).map((s: string) => s.trim()).filter((s: string) => s.length > 0);
-        if (headers.length < 2) {
-            appendStatus('字段头至少需包含 key 和一种语言字段');
-            return;
-        }
-        const keyField = headers[0];
-        const langFields = headers.slice(1);
-
-        const srcRoot = srcPathInput?.value.trim() || '';
-        const outRoot = outPathInput?.value.trim() || '';
-        const checkDup = !!(dupCheck?.checked);
-
-        if (!srcRoot) {
-            appendStatus('请先选择源文件夹');
-            return;
-        }
-        if (!outRoot) {
-            appendStatus('请先选择输出文件夹');
-            return;
-        }
-
-        appendStatus('开始转换');
-        appendStatus(`源目录: ${srcRoot}`);
-        appendStatus(`输出目录: ${outRoot}`);
-        appendStatus(`字段头: ${headers.join(',')}`);
-
-        // list files in srcRoot
-        const allFiles = fs.readdirSync(srcRoot);
-        const dataFiles = allFiles.filter((f: string) => ['.csv', '.xlsx', '.xls'].includes(path.extname(f).toLowerCase()));
-        if (dataFiles.length === 0) {
-            appendStatus('源目录中没有找到 csv 或 xlsx 文件');
-            return;
-        }
-
-        appendStatus(`发现 ${dataFiles.length} 个源文件`);
-        appendStatus(`每个语言将输出 1 个 MessagePack 文件`);
-
-        // aggregate across all files into overall language maps
-        const overallLangMaps: Record<string, Record<string, string>> = {};
-        langFields.forEach((lf: string) => { overallLangMaps[lf] = {}; });
-        const duplicatesByLang: Record<string, Set<string>> = {};
-        langFields.forEach((lf: string) => { duplicatesByLang[lf] = new Set(); });
-
-        for (let i = 0; i < dataFiles.length; i++) {
-            const filename = dataFiles[i];
-            const fullPath = path.join(srcRoot, filename);
-            appendStatus(`解析 ${filename} ...`);
+    // Actions
+    if (genCfgBtn) {
+        genCfgBtn.addEventListener('click', async () => {
+            const curState = loadState();
+            setButtonsDisabled(true);
             try {
-                const rows = await parseFile(fullPath);
-                if (!rows || rows.length === 0) {
-                    appendStatus(`文件 ${filename} 无数据，跳过`);
-                    continue;
-                }
-
-                for (let r = 0; r < rows.length; r++) {
-                    const row = rows[r] as Record<string, any>;
-                    const key = String(row[keyField] ?? '').trim();
-                    if (!key) continue;
-                    for (let li = 0; li < langFields.length; li++) {
-                        const lf = langFields[li];
-                        const val = String(row[lf] ?? '');
-                        if (checkDup && Object.prototype.hasOwnProperty.call(overallLangMaps[lf], key)) {
-                            duplicatesByLang[lf].add(key);
-                        } else {
-                            overallLangMaps[lf][key] = val;
-                        }
-                    }
-                }
-
-                appendStatus(`解析 ${filename} 完成`);
-            } catch (err) {
-                const em = (err as any)?.message ?? String(err);
-                appendStatus(`解析 ${filename} 失败: ${em}`);
-            }
-        }
-
-        // if checkDup enabled, verify duplicates
-        if (checkDup) {
-            const dupMsgs: string[] = [];
-            for (let li = 0; li < langFields.length; li++) {
-                const lf = langFields[li];
-                const dset = duplicatesByLang[lf];
-                if (dset && dset.size > 0) {
-                    dupMsgs.push(`${lf}: ${Array.from(dset).join(', ')}`);
-                }
-            }
-            if (dupMsgs.length > 0) {
-                appendStatus('发现重复 Key，已取消生成：', 'error');
-                dupMsgs.forEach(m => appendStatus(m, 'error'));
-                return;
-            }
-        }
-
-        // clear old language folders and write a single msgpack file per language
-        for (let li = 0; li < langFields.length; li++) {
-            const lf = langFields[li];
-            const langDir = path.join(outRoot, lf);
-            try {
-                appendStatus(`清理旧的 .msgpack 文件 ${langDir}`);
-                removeMsgpackFiles(langDir);
-                fs.mkdirSync(langDir, { recursive: true });
-                const outFile = path.join(langDir, `${lf}.msgpack`);
-                const packed = encode(overallLangMaps[lf]);
-                fs.writeFileSync(outFile, Buffer.from(packed));
-                appendStatus(`写入 ${outFile}`);
-            } catch (err) {
-                appendStatus(`写入 ${lf} 失败: ${(err as any)?.message ?? String(err)}`);
-            }
-        }
-
-        appendStatus('全部完成');
-    }
-
-    applyState();
-
-    if (srcBtn) {
-        srcBtn.addEventListener('click', async () => {
-            try {
-                appendStatus('正在打开源文件夹选择框...');
-                const folderPath = await pickFolder('选择源文件夹', srcPathInput?.value.trim() || '');
-                if (!folderPath) {
-                    appendStatus('未选择源文件夹');
-                    return;
-                }
-                updateAndSave({ srcRoot: folderPath });
-                appendStatus(`已选择源文件夹: ${folderPath}`);
-            } catch (error) {
-                appendStatus(`选择源文件夹失败: ${(error as any)?.message ?? String(error)}`);
+                appendLog('=== 开始导出配置表 ===');
+                await runLubanCmd(curState.cfgConfFile, 'client', curState.cfgCodeDir, curState.cfgDataDir);
+            } finally {
+                setButtonsDisabled(false);
             }
         });
     }
 
-    if (outPathInput) {
-        outPathInput.addEventListener('input', () => saveUiState({ outRoot: outPathInput.value.trim() }));
-    }
-
-    if (outBtn) {
-        outBtn.addEventListener('click', async () => {
+    if (genLangZhBtn) {
+        genLangZhBtn.addEventListener('click', async () => {
+            const curState = loadState();
+            setButtonsDisabled(true);
             try {
-                appendStatus('正在打开输出文件夹选择框...');
-                const folderPath = await pickFolder('选择输出文件夹', outPathInput?.value.trim() || '');
-                if (!folderPath) {
-                    appendStatus('未选择输出文件夹');
-                    return;
-                }
-                updateAndSave({ outRoot: folderPath });
-                appendStatus(`已选择输出文件夹: ${folderPath}`);
-            } catch (error) {
-                appendStatus(`选择输出文件夹失败: ${(error as any)?.message ?? String(error)}`);
+                appendLog('=== 开始导出中文多语言 (zh-Hans) ===');
+                await runLubanCmd(curState.langConfFile, 'zh-Hans', curState.langCodeDir, curState.langDataDirZh);
+            } finally {
+                setButtonsDisabled(false);
             }
         });
     }
 
-    if (headerInput) {
-        headerInput.addEventListener('input', () => saveUiState({ headerText: headerInput.value }));
-    }
-
-    if (processBtn) {
-        processBtn.addEventListener('click', () => {
-            // clear status
-            if (statusArea) statusArea.textContent = '';
-            saveUiState({
-                srcRoot: srcPathInput?.value.trim() || '',
-                outRoot: outPathInput?.value.trim() || '',
-                headerText: headerInput?.value ?? '',
-            });
-            void doProcess();
+    if (genLangEnBtn) {
+        genLangEnBtn.addEventListener('click', async () => {
+            const curState = loadState();
+            setButtonsDisabled(true);
+            try {
+                appendLog('=== 开始导出英文多语言 (en) ===');
+                await runLubanCmd(curState.langConfFile, 'en', curState.langCodeDir, curState.langDataDirEn);
+            } finally {
+                setButtonsDisabled(false);
+            }
         });
     }
+
+    if (genLangBtn) {
+        genLangBtn.addEventListener('click', async () => {
+            const curState = loadState();
+            setButtonsDisabled(true);
+            try {
+                appendLog('=== 开始全量导出多语言包 ===');
+                const zhOk = await runLubanCmd(curState.langConfFile, 'zh-Hans', curState.langCodeDir, curState.langDataDirZh);
+                if (zhOk) {
+                    await runLubanCmd(curState.langConfFile, 'en', curState.langCodeDir, curState.langDataDirEn);
+                }
+            } finally {
+                setButtonsDisabled(false);
+            }
+        });
+    }
+
+    if (clearLogBtn) {
+        clearLogBtn.addEventListener('click', clearLog);
+    }
+
+    setupTabSwitcher(panel, state.activeTab);
 }
 
 module.exports = Editor.Panel.define({
     listeners: {
         show() {
-            console.log('show');
+            console.log('[gcore-panel]: show');
         },
         hide() {
-            console.log('hide');
+            console.log('[gcore-panel]: hide');
         },
     },
     template: readFileSync(join(__dirname, '../../../static/template/default/index.html'), 'utf-8'),
@@ -424,6 +424,26 @@ module.exports = Editor.Panel.define({
     $: {
         tabHeader: '.tab-header',
         tabContent: '.tab-content',
+        statusArea: '#status-area',
+        clearLogBtn: '#clear-log-btn',
+        cfgConfFile: '#cfg-conf-file',
+        cfgConfBtn: '#cfg-conf-btn',
+        cfgCodeDir: '#cfg-code-dir',
+        cfgCodeBtn: '#cfg-code-btn',
+        cfgDataDir: '#cfg-data-dir',
+        cfgDataBtn: '#cfg-data-btn',
+        genCfgBtn: '#gen-cfg-btn',
+        langConfFile: '#lang-conf-file',
+        langConfBtn: '#lang-conf-btn',
+        langCodeDir: '#lang-code-dir',
+        langCodeBtn: '#lang-code-btn',
+        langDataZh: '#lang-data-zh',
+        langDataZhBtn: '#lang-data-zh-btn',
+        langDataEn: '#lang-data-en',
+        langDataEnBtn: '#lang-data-en-btn',
+        genLangBtn: '#gen-lang-btn',
+        genLangZhBtn: '#gen-lang-zh-btn',
+        genLangEnBtn: '#gen-lang-en-btn',
     },
     methods: {
         hello() {
@@ -431,11 +451,10 @@ module.exports = Editor.Panel.define({
         },
     },
     ready() {
-        setupTabSwitcher(this, loadUiState().activeTab);
         try {
-            initI18nTool(this);
+            initLubanTools(this);
         } catch (e) {
-            console.error('initI18nTool error', e);
+            console.error('initLubanTools error', e);
         }
     },
     beforeClose() {},

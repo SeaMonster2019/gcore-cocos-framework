@@ -1,40 +1,94 @@
 <div id="panel-container">
     <div class="tab-header">
-        <button class="tab-btn active" data-tab="tab-1">多语言工具</button>
-        <button class="tab-btn" data-tab="tab-2">测试页签 2</button>
+        <button class="tab-btn active" data-tab="tab-1">配置表转表</button>
+        <button class="tab-btn" data-tab="tab-2">多语言转表</button>
     </div>
     <div class="tab-content">
+        <!-- Tab 1: 配置表转表 -->
         <div class="tab-pane active" id="tab-1">
-            <h2>多语言辅助工具</h2>
-            <div class="form-row">
-                <label class="folder-picker">
-                    <span>源文件夹：</span>
-                    <button id="src-folder-btn" type="button">选择文件夹</button>
-                    <input id="src-folder-path" type="text" readonly placeholder="请选择源文件夹" />
-                </label>
+            <h2>配置表转表 (Luban)</h2>
+            <p class="tab-desc">读取业务层配置表配置，通过框架 Luban 引擎生成 TypeScript 结构代码与二进制数据文件。</p>
+
+            <div class="form-group">
+                <label>配置文件 (luban.conf)：</label>
+                <div class="file-picker">
+                    <input id="cfg-conf-file" type="text" placeholder="design/配置/配置表/luban.conf" />
+                    <button id="cfg-conf-btn" type="button">选择文件</button>
+                </div>
             </div>
-            <div class="form-row">
-                <label class="folder-picker">
-                    <span>输出文件夹：</span>
-                    <button id="out-folder-btn" type="button">选择文件夹</button>
-                    <input id="out-folder-path" type="text" readonly placeholder="请选择输出文件夹" />
-                </label>
+
+            <div class="form-group">
+                <label>代码输出目录 (outputCodeDir)：</label>
+                <div class="file-picker">
+                    <input id="cfg-code-dir" type="text" placeholder="assets/scripts/config/base" />
+                    <button id="cfg-code-btn" type="button">选择文件夹</button>
+                </div>
             </div>
-            <div class="form-row">
-                <label>字段头（以逗号分隔，例如：Key,Chinese,English）：</label>
-                <input id="header-input" type="text" placeholder="Key,Chinese,English" style="width:60%" />
+
+            <div class="form-group">
+                <label>数据输出目录 (outputDataDir)：</label>
+                <div class="file-picker">
+                    <input id="cfg-data-dir" type="text" placeholder="assets/resources/config" />
+                    <button id="cfg-data-btn" type="button">选择文件夹</button>
+                </div>
             </div>
-            <div class="form-row">
-                <button id="process-btn">生成 MessagePack</button>
+
+            <div class="btn-row">
+                <button id="gen-cfg-btn" class="primary-btn" type="button">生成配置表 (cfg)</button>
             </div>
-            <div class="form-row">
-                <label><input id="dup-check" type="checkbox" checked /> 检查重复 Key（发现重复将取消生成）</label>
-            </div>
-            <pre id="status-area" style="white-space:pre-wrap;max-height:240px;overflow:auto"></pre>
         </div>
+
+        <!-- Tab 2: 多语言转表 -->
         <div class="tab-pane" id="tab-2">
-            <h2>测试页签 2</h2>
-            <p>这里用于展示第二个测试页签的内容。</p>
+            <h2>多语言转表 (Luban)</h2>
+            <p class="tab-desc">读取业务层多语言配置，生成多语言二进制包与本地化 TypeScript 代码。</p>
+
+            <div class="form-group">
+                <label>配置文件 (luban.conf)：</label>
+                <div class="file-picker">
+                    <input id="lang-conf-file" type="text" placeholder="design/配置/多语言/luban.conf" />
+                    <button id="lang-conf-btn" type="button">选择文件</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>代码输出目录 (outputCodeDir)：</label>
+                <div class="file-picker">
+                    <input id="lang-code-dir" type="text" placeholder="assets/scripts/localization/base" />
+                    <button id="lang-code-btn" type="button">选择文件夹</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>中文数据输出目录 (pack-zh-Hans)：</label>
+                <div class="file-picker">
+                    <input id="lang-data-zh" type="text" placeholder="assets/language/pack-zh-Hans" />
+                    <button id="lang-data-zh-btn" type="button">选择文件夹</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>英文数据输出目录 (pack-en)：</label>
+                <div class="file-picker">
+                    <input id="lang-data-en" type="text" placeholder="assets/language/pack-en" />
+                    <button id="lang-data-en-btn" type="button">选择文件夹</button>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button id="gen-lang-btn" class="primary-btn" type="button">全量生成多语言 (lang)</button>
+                <button id="gen-lang-zh-btn" type="button">仅生成中文 (zh-Hans)</button>
+                <button id="gen-lang-en-btn" type="button">仅生成英文 (en)</button>
+            </div>
         </div>
+    </div>
+
+    <!-- 底部公共日志控制台 -->
+    <div class="log-footer">
+        <div class="log-header">
+            <span>日志控制台：</span>
+            <button id="clear-log-btn" class="small-btn" type="button">清空日志</button>
+        </div>
+        <pre id="status-area"></pre>
     </div>
 </div>

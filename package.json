@@ -79,25 +79,15 @@
     "contributions": {
         "menu": [
             {
-                "path": "i18n:menu.panel/gcore-framework",
+                "path": "i18n:gcore-framework.menu_title",
                 "label": "i18n:gcore-framework.open_panel",
                 "message": "open-panel"
-            },
-            {
-                "path": "i18n:menu.develop/gcore-framework",
-                "label": "i18n:gcore-framework.send_to_panel",
-                "message": "send-to-panel"
             }
         ],
         "messages": {
             "open-panel": {
                 "methods": [
                     "openPanel"
-                ]
-            },
-            "send-to-panel": {
-                "methods": [
-                    "default.hello"
                 ]
             }
         },
