@@ -38,6 +38,13 @@ export interface LubanToolState {
     languages: LanguageItem[];
     /** 各语言的数据输出目录映射表 (langCode -> outputDataDir) */
     langDataDirs: Record<string, string>;
+
+    /** 编辑器 HTTP 实时预览服务开关 */
+    httpServerEnabled: boolean;
+    /** 编辑器 HTTP 实时预览服务端口号 */
+    httpServerPort: number;
+    /** 当前选中的预览语言代码 */
+    previewLang: string;
 }
 
 /** 面板上下文接口，用于向分面板传递全局能力 */

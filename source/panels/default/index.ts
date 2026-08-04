@@ -149,6 +149,9 @@ module.exports = Editor.Panel.define({
         manageLangBtn: '#manage-lang-btn',
         dynamicLangDirs: '#dynamic-lang-dirs',
         dynamicLangBtns: '#dynamic-lang-btns',
+        httpServerToggle: '#http-server-toggle',
+        httpServerPort: '#http-server-port',
+        previewLangSelect: '#preview-lang-select',
 
         // 语言管理弹窗 B DOM 选择器映射
         langModal: '#lang-modal',

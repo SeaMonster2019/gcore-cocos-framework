@@ -1,51 +1,58 @@
 import { _decorator, CCString, Component, Label } from "cc";
-import { GCoreEvent, gcoreEvent } from "../../event/index";
-import { gcoreI18n } from "../index";
-
+import { GCoreEvent, gcoreEvent } from "../../event";
+import { i18n } from "../i18n-mgr";
 
 const { ccclass, property, menu } = _decorator;
 
-/** 多语言文本组件 */
+/** 程序多语言文本组件 */
 @ccclass("I18nLabel")
 @menu("GCore/I18n/I18nLabel")
 export class I18nLabel extends Component {
 
 	/** 多语言 key */
 	@property({ displayName: "Key", tooltip: "多语言 key" })
-	public i18nKey: string = "";
+	public i18nKey = "";
 
 	/** 默认文本 */
 	@property({ displayName: "Fallback", tooltip: "当 key 不存在时显示的默认文本" })
-	public fallback: string = "";
+	public fallback = "";
 
 	/** 占位参数 */
 	@property({ type: [CCString], displayName: "Params", tooltip: "占位参数，按顺序替换 {0}、{1}..." })
 	public params: string[] = [];
 
-	/** 文本 */
-	@property({ displayName: "Label", tooltip: "要显示文本 of Label 组件，如果不设置会自动获取当前节点上的 Label 组件" })
-	public label: Label | undefined;
+	/** 文本组件 */
+	@property({ displayName: "Label", tooltip: "要显示文本的 Label 组件，如果不设置会自动获取当前节点上的 Label 组件" })
+	public label: Label | null = null;
 
-	/** 初始化 */
+	/****************  生命周期方法  ****************/
+
+	/** 节点加载 */
 	protected onLoad(): void {
 		if (!this.label) {
-			this.label = this.getComponent(Label) ?? undefined;
+			this.label = this.getComponent(Label);
 		}
 	}
 
-	/** 激活 */
+	/** 节点使能 */
 	protected onEnable(): void {
-		gcoreEvent.on(GCoreEvent.LANGUAGE_CHANGED.SWITCH_LANGUAGE, this._refresh, this);
-		this._refresh();
+		gcoreEvent.on(GCoreEvent.LANGUAGE_CHANGED.SWITCH_LANGUAGE, this.refresh, this);
+		this.refresh();
 	}
 
-	/** 失活 */
+	/** 节点禁用 */
 	protected onDisable(): void {
-		gcoreEvent.off(GCoreEvent.LANGUAGE_CHANGED.SWITCH_LANGUAGE, this._refresh, this);
+		gcoreEvent.off(GCoreEvent.LANGUAGE_CHANGED.SWITCH_LANGUAGE, this.refresh, this);
 	}
 
-	/** 设置 key 并刷新 */
-	public setI18nKey(key: string, fallback?: string, params?: Array<string | number>): void {
+	/****************  公共方法  ****************/
+
+	/** 设置多语言信息
+	 * @param key 多语言 key
+	 * @param fallback 默认文本
+	 * @param params 占位参数数组
+	 */
+	public setKey(key: string, fallback?: string, params?: Array<string | number>): void {
 		this.i18nKey = key;
 		if (fallback !== undefined) {
 			this.fallback = fallback;
@@ -53,15 +60,29 @@ export class I18nLabel extends Component {
 		if (params) {
 			this.params = params.map((item) => String(item));
 		}
-		this._refresh();
+		this.refresh();
 	}
 
-	/** 刷新文本 */
-	private _refresh(): void {
+	/** 刷新文本显示 */
+	public refresh(): void {
+		if (!this.label) {
+			this.label = this.getComponent(Label);
+		}
 		if (!this.label || !this.i18nKey) {
 			return;
 		}
-		this.label.string = gcoreI18n.getText(this.i18nKey);
+
+		this.label.string = this.format(i18n.getText(this.i18nKey, this.fallback));
+	}
+
+	/****************  私有方法  ****************/
+
+	/** 格式化文本参数
+	 * @param text 原始文本
+	 * @returns 替换占位参数后的文本
+	 */
+	private format(text: string): string {
+		return text.replace(/\{(\d+)\}/g, (match, index) => this.params[Number(index)] ?? match);
 	}
 
 }

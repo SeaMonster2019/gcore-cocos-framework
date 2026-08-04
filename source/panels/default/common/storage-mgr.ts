@@ -24,6 +24,9 @@ export const DEFAULT_STATE: LubanToolState = {
         'zh-Hans': 'assets/language/pack-zh-Hans',
         'en': 'assets/language/pack-en',
     },
+    httpServerEnabled: false,
+    httpServerPort: 8989,
+    previewLang: 'zh-Hans',
 };
 
 /**
@@ -51,6 +54,9 @@ export class StorageMgr {
                         langCodeDir: parsed.langCodeDir ?? DEFAULT_STATE.langCodeDir,
                         languages: langs,
                         langDataDirs: langDirs,
+                        httpServerEnabled: parsed.httpServerEnabled ?? DEFAULT_STATE.httpServerEnabled,
+                        httpServerPort: parsed.httpServerPort ?? DEFAULT_STATE.httpServerPort,
+                        previewLang: parsed.previewLang ?? DEFAULT_STATE.previewLang,
                     };
                 }
             }
