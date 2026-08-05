@@ -89,6 +89,16 @@
                 "methods": [
                     "openPanel"
                 ]
+            },
+            "query-i18n-text": {
+                "methods": [
+                    "queryI18nText"
+                ]
+            },
+            "query-i18n-all": {
+                "methods": [
+                    "queryI18nAll"
+                ]
             }
         },
         "asset-db": {

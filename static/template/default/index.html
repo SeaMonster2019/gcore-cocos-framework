@@ -71,22 +71,14 @@
             <!-- 动态渲染转表按钮（全量生成 & 通用单语言生成） -->
             <div id="dynamic-lang-btns" class="btn-row"></div>
 
-            <!-- 编辑器 HTTP 实时预览服务配置卡片 -->
+            <!-- 编辑器实时预览语言配置卡片 -->
             <div class="server-card">
-                <h3>3. 编辑器 HTTP 实时预览服务</h3>
-                <p class="tab-desc" style="margin-bottom:8px;">开启后运行超轻量级 HTTP 服务，使 Cocos 编辑器场景中的 I18n 组件在编辑模式下实时获取并预览多语言文本。</p>
+                <h3>编辑器多语言预览设置</h3>
+                <p class="tab-desc" style="margin-bottom:8px;">设置 Cocos 编辑器场景中 I18n 组件在编辑模式下实时预览的语言。</p>
                 <div class="form-row flex-row">
-                    <label class="switch-label">
-                        <input id="http-server-toggle" type="checkbox" />
-                        <span>开启 HTTP 实时预览服务</span>
-                    </label>
-                    <div class="input-inline">
-                        <span>端口号：</span>
-                        <input id="http-server-port" type="number" value="8989" style="width: 75px;" />
-                    </div>
                     <div class="input-inline">
                         <span>预览语言：</span>
-                        <select id="preview-lang-select" style="min-width: 110px;"></select>
+                        <select id="preview-lang-select" style="min-width: 140px;"></select>
                     </div>
                 </div>
             </div>

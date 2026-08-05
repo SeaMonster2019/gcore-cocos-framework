@@ -1,10 +1,9 @@
 /**
  * @file language-panel.ts
- * @description 多语言转表分面板控制器，解耦处理多语言 (luban.conf) 路径设置、动态语言生成、HTTP 编辑器预览服务与多语言管理弹窗联动
+ * @description 多语言转表分面板控制器，解耦处理多语言 (luban.conf) 路径设置、动态语言生成、编辑器实时预览与多语言管理弹窗联动
  */
 
 import { bindPickerBtn, queryElement } from '../common/dom-util';
-import { HttpServerMgr } from '../common/http-server';
 import { LubanRunner } from '../common/luban-runner';
 import { escapeHtml, normalizePathForStorage } from '../common/path-util';
 import { StorageMgr } from '../common/storage-mgr';
@@ -24,9 +23,7 @@ export class LanguagePanel {
     private dynamicLangDirsContainer: HTMLElement | null = null;
     private dynamicLangBtnsContainer: HTMLElement | null = null;
 
-    // HTTP 预览服务控制节点
-    private httpServerToggle: HTMLInputElement | null = null;
-    private httpServerPortInp: HTMLInputElement | null = null;
+    // 编辑器多语言预览选择控制节点
     private previewLangSelect: HTMLSelectElement | null = null;
 
     constructor(context: PanelContext) {
@@ -39,7 +36,7 @@ export class LanguagePanel {
      */
     public init(): void {
         const { panel, workspace, appendLog } = this.context;
-        const state = StorageMgr.loadState();
+        const state = StorageMgr.loadState(workspace);
 
         // 检索基础节点
         this.langConfFileInp = (panel.$ && panel.$.langConfFile) || queryElement<HTMLInputElement>(panel, '#lang-conf-file');
@@ -51,9 +48,7 @@ export class LanguagePanel {
         this.dynamicLangDirsContainer = (panel.$ && panel.$.dynamicLangDirs) || queryElement<HTMLElement>(panel, '#dynamic-lang-dirs');
         this.dynamicLangBtnsContainer = (panel.$ && panel.$.dynamicLangBtns) || queryElement<HTMLElement>(panel, '#dynamic-lang-btns');
 
-        // 检索 HTTP 预览服务节点
-        this.httpServerToggle = (panel.$ && panel.$.httpServerToggle) || queryElement<HTMLInputElement>(panel, '#http-server-toggle');
-        this.httpServerPortInp = (panel.$ && panel.$.httpServerPort) || queryElement<HTMLInputElement>(panel, '#http-server-port');
+        // 检索预览语言选择节点
         this.previewLangSelect = (panel.$ && panel.$.previewLangSelect) || queryElement<HTMLSelectElement>(panel, '#preview-lang-select');
 
         // 初始化弹窗 B
@@ -63,20 +58,17 @@ export class LanguagePanel {
         if (this.langConfFileInp) this.langConfFileInp.value = state.langConfFile;
         if (this.langCodeDirInp) this.langCodeDirInp.value = state.langCodeDir;
 
-        if (this.httpServerToggle) this.httpServerToggle.checked = state.httpServerEnabled;
-        if (this.httpServerPortInp) this.httpServerPortInp.value = String(state.httpServerPort);
-
         // 绑定路径输入事件
         if (this.langConfFileInp) {
             this.langConfFileInp.addEventListener('input', () => {
                 const val = normalizePathForStorage(this.langConfFileInp!.value, workspace);
-                StorageMgr.saveState({ langConfFile: val });
+                StorageMgr.saveState({ langConfFile: val }, workspace);
             });
         }
         if (this.langCodeDirInp) {
             this.langCodeDirInp.addEventListener('input', () => {
                 const val = normalizePathForStorage(this.langCodeDirInp!.value, workspace);
-                StorageMgr.saveState({ langCodeDir: val });
+                StorageMgr.saveState({ langCodeDir: val }, workspace);
             });
         }
 
@@ -87,7 +79,7 @@ export class LanguagePanel {
             '选择多语言 luban.conf 文件',
             'file',
             workspace,
-            (val) => StorageMgr.saveState({ langConfFile: val }),
+            (val) => StorageMgr.saveState({ langConfFile: val }, workspace),
             appendLog
         );
 
@@ -97,7 +89,7 @@ export class LanguagePanel {
             '选择多语言代码输出文件夹',
             'directory',
             workspace,
-            (val) => StorageMgr.saveState({ langCodeDir: val }),
+            (val) => StorageMgr.saveState({ langCodeDir: val }, workspace),
             appendLog
         );
 
@@ -106,53 +98,18 @@ export class LanguagePanel {
             this.manageLangBtn.addEventListener('click', () => this.modal.open());
         }
 
-        // 绑定 HTTP 服务开关
-        if (this.httpServerToggle) {
-            this.httpServerToggle.addEventListener('change', () => {
-                const enabled = this.httpServerToggle!.checked;
-                const port = parseInt(this.httpServerPortInp?.value || '8989', 10) || 8989;
-                const previewLang = this.previewLangSelect?.value || 'zh-Hans';
-
-                StorageMgr.saveState({ httpServerEnabled: enabled });
-
-                if (enabled) {
-                    HttpServerMgr.start(port, previewLang, workspace, appendLog);
-                } else {
-                    HttpServerMgr.stop(appendLog);
-                }
-            });
-        }
-
-        // 绑定 HTTP 服务端口号输入
-        if (this.httpServerPortInp) {
-            this.httpServerPortInp.addEventListener('change', () => {
-                const port = parseInt(this.httpServerPortInp!.value || '8989', 10) || 8989;
-                StorageMgr.saveState({ httpServerPort: port });
-
-                if (this.httpServerToggle?.checked) {
-                    const previewLang = this.previewLangSelect?.value || 'zh-Hans';
-                    HttpServerMgr.start(port, previewLang, workspace, appendLog);
-                }
-            });
-        }
-
         // 绑定预览语言切换下拉框
         if (this.previewLangSelect) {
             this.previewLangSelect.addEventListener('change', () => {
                 const previewLang = this.previewLangSelect!.value;
-                StorageMgr.saveState({ previewLang });
-                HttpServerMgr.setPreviewLang(previewLang);
+                StorageMgr.saveState({ previewLang }, workspace);
+                Editor.Message.send('gcore-framework', 'setPreviewLang', previewLang);
                 appendLog(`修改编辑器预览语言为: ${previewLang}`, 'info');
             });
         }
 
         // 初始渲染动态语言目录与转表按钮
         this.renderDynamicLangSections();
-
-        // 若初始配置已开启 HTTP 服务，自动启动
-        if (state.httpServerEnabled) {
-            HttpServerMgr.start(state.httpServerPort, state.previewLang, workspace, appendLog);
-        }
     }
 
     /**
@@ -160,7 +117,7 @@ export class LanguagePanel {
      */
     public renderDynamicLangSections(): void {
         const { panel, workspace } = this.context;
-        const currentState = StorageMgr.loadState();
+        const currentState = StorageMgr.loadState(workspace);
 
         const containerDirs = (panel.$ && panel.$.dynamicLangDirs) || this.dynamicLangDirsContainer || queryElement<HTMLElement>(panel, '#dynamic-lang-dirs');
         const containerBtns = (panel.$ && panel.$.dynamicLangBtns) || this.dynamicLangBtnsContainer || queryElement<HTMLElement>(panel, '#dynamic-lang-btns');
@@ -183,8 +140,8 @@ export class LanguagePanel {
             if (currentState.languages.length > 0 && !currentState.languages.some((l) => l.code === currentState.previewLang)) {
                 const fallbackLang = currentState.languages[0].code;
                 selectElem.value = fallbackLang;
-                StorageMgr.saveState({ previewLang: fallbackLang });
-                HttpServerMgr.setPreviewLang(fallbackLang);
+                StorageMgr.saveState({ previewLang: fallbackLang }, workspace);
+                Editor.Message.send('gcore-framework', 'setPreviewLang', fallbackLang);
             }
         }
 
@@ -211,13 +168,13 @@ export class LanguagePanel {
                     inp.addEventListener('input', () => {
                         const normalized = normalizePathForStorage(inp.value, workspace);
                         currentState.langDataDirs[lang.code] = normalized;
-                        StorageMgr.saveState({ langDataDirs: currentState.langDataDirs });
+                        StorageMgr.saveState({ langDataDirs: currentState.langDataDirs }, workspace);
                     });
                 }
 
                 bindPickerBtn(btn, inp, `选择 ${lang.name} (${lang.code}) 数据输出文件夹`, 'directory', workspace, (val) => {
                     currentState.langDataDirs[lang.code] = val;
-                    StorageMgr.saveState({ langDataDirs: currentState.langDataDirs });
+                    StorageMgr.saveState({ langDataDirs: currentState.langDataDirs }, workspace);
                 });
             });
         }
@@ -252,15 +209,15 @@ export class LanguagePanel {
      */
     private async executeGenerateSingleLang(langCode: string, langName: string): Promise<boolean> {
         const { workspace, appendLog, setAllButtonsDisabled } = this.context;
-        const curState = StorageMgr.loadState();
+        const curState = StorageMgr.loadState(workspace);
         const dataDir = curState.langDataDirs[langCode] || `assets/language/pack-${langCode}`;
 
         setAllButtonsDisabled(true);
         try {
             appendLog(`=== 开始生成 ${langName} (${langCode}) 多语言包 ===`);
             const ok = await LubanRunner.run(curState.langConfFile, langCode, curState.langCodeDir, dataDir, workspace, appendLog);
-            if (ok && curState.httpServerEnabled) {
-                HttpServerMgr.loadCsvData(workspace);
+            if (ok) {
+                Editor.Message.send('gcore-framework', 'reloadCsvData');
             }
             return ok;
         } finally {
@@ -273,7 +230,7 @@ export class LanguagePanel {
      */
     private async executeGenerateAllLangs(): Promise<void> {
         const { workspace, appendLog, setAllButtonsDisabled } = this.context;
-        const curState = StorageMgr.loadState();
+        const curState = StorageMgr.loadState(workspace);
 
         if (curState.languages.length === 0) {
             appendLog('未配置任何语言，请先在“⚙ 语言管理”中添加语言。', 'error');
@@ -293,9 +250,7 @@ export class LanguagePanel {
                     break;
                 }
             }
-            if (curState.httpServerEnabled) {
-                HttpServerMgr.loadCsvData(workspace);
-            }
+            Editor.Message.send('gcore-framework', 'reloadCsvData');
         } finally {
             setAllButtonsDisabled(false);
         }
