@@ -16,8 +16,6 @@ export class LanguagePanel {
 
     private langConfFileInp: HTMLInputElement | null = null;
     private langConfBtn: HTMLButtonElement | null = null;
-    private langCodeDirInp: HTMLInputElement | null = null;
-    private langCodeBtn: HTMLButtonElement | null = null;
     private manageLangBtn: HTMLButtonElement | null = null;
 
     private dynamicLangDirsContainer: HTMLElement | null = null;
@@ -41,8 +39,6 @@ export class LanguagePanel {
         // 检索基础节点
         this.langConfFileInp = (panel.$ && panel.$.langConfFile) || queryElement<HTMLInputElement>(panel, '#lang-conf-file');
         this.langConfBtn = (panel.$ && panel.$.langConfBtn) || queryElement<HTMLButtonElement>(panel, '#lang-conf-btn');
-        this.langCodeDirInp = (panel.$ && panel.$.langCodeDir) || queryElement<HTMLInputElement>(panel, '#lang-code-dir');
-        this.langCodeBtn = (panel.$ && panel.$.langCodeBtn) || queryElement<HTMLButtonElement>(panel, '#lang-code-btn');
         this.manageLangBtn = (panel.$ && panel.$.manageLangBtn) || queryElement<HTMLButtonElement>(panel, '#manage-lang-btn');
 
         this.dynamicLangDirsContainer = (panel.$ && panel.$.dynamicLangDirs) || queryElement<HTMLElement>(panel, '#dynamic-lang-dirs');
@@ -56,19 +52,12 @@ export class LanguagePanel {
 
         // 应用初始状态
         if (this.langConfFileInp) this.langConfFileInp.value = state.langConfFile;
-        if (this.langCodeDirInp) this.langCodeDirInp.value = state.langCodeDir;
 
         // 绑定路径输入事件
         if (this.langConfFileInp) {
             this.langConfFileInp.addEventListener('input', () => {
                 const val = normalizePathForStorage(this.langConfFileInp!.value, workspace);
                 StorageMgr.saveState({ langConfFile: val }, workspace);
-            });
-        }
-        if (this.langCodeDirInp) {
-            this.langCodeDirInp.addEventListener('input', () => {
-                const val = normalizePathForStorage(this.langCodeDirInp!.value, workspace);
-                StorageMgr.saveState({ langCodeDir: val }, workspace);
             });
         }
 
@@ -80,16 +69,6 @@ export class LanguagePanel {
             'file',
             workspace,
             (val) => StorageMgr.saveState({ langConfFile: val }, workspace),
-            appendLog
-        );
-
-        bindPickerBtn(
-            this.langCodeBtn,
-            this.langCodeDirInp,
-            '选择多语言代码输出文件夹',
-            'directory',
-            workspace,
-            (val) => StorageMgr.saveState({ langCodeDir: val }, workspace),
             appendLog
         );
 
@@ -205,7 +184,7 @@ export class LanguagePanel {
     }
 
     /**
-     * 执行单个语言导出
+     * 执行单个语言导出（仅导出二进制数据包，无需导出业务层 TS 模板脚本）
      */
     private async executeGenerateSingleLang(langCode: string, langName: string): Promise<boolean> {
         const { workspace, appendLog, setAllButtonsDisabled } = this.context;
@@ -215,7 +194,7 @@ export class LanguagePanel {
         setAllButtonsDisabled(true);
         try {
             appendLog(`=== 开始生成 ${langName} (${langCode}) 多语言包 ===`);
-            const ok = await LubanRunner.run(curState.langConfFile, langCode, curState.langCodeDir, dataDir, workspace, appendLog);
+            const ok = await LubanRunner.run(curState.langConfFile, langCode, null, dataDir, workspace, appendLog);
             if (ok) {
                 Editor.Message.send('gcore-framework', 'reloadCsvData');
             }
@@ -226,7 +205,7 @@ export class LanguagePanel {
     }
 
     /**
-     * 执行全量语言导出
+     * 执行全量语言导出（仅导出二进制数据包，无需导出业务层 TS 模板脚本）
      */
     private async executeGenerateAllLangs(): Promise<void> {
         const { workspace, appendLog, setAllButtonsDisabled } = this.context;
@@ -244,7 +223,7 @@ export class LanguagePanel {
                 const lang = curState.languages[i];
                 const dataDir = curState.langDataDirs[lang.code] || `assets/language/pack-${lang.code}`;
                 appendLog(`[${i + 1}/${curState.languages.length}] 生成 ${lang.name} (${lang.code}) ...`);
-                const ok = await LubanRunner.run(curState.langConfFile, lang.code, curState.langCodeDir, dataDir, workspace, appendLog);
+                const ok = await LubanRunner.run(curState.langConfFile, lang.code, null, dataDir, workspace, appendLog);
                 if (!ok) {
                     appendLog(`生成 ${lang.name} (${lang.code}) 失败，中断后续流程`, 'error');
                     break;
