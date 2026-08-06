@@ -36,7 +36,6 @@ export class GCoreInit extends Component {
         gcoreStorage.init();
         gcoreRes.init();
         gcoreConfig.init();
-        gcoreI18n.init();
         gcoreMvc.init({
             root: this.root,
             viewPrefabFunc: (prefab: string, pack: string) => {
