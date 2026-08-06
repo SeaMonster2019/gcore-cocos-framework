@@ -30,17 +30,38 @@ export const methods: { [key: string]: (...any: any) => any } = {
         return I18nDataMgr.getAllTexts(workspace, lang);
     },
 
-    /** 设置预览语言 */
+    /** 设置预览语言并即时广播 Scene 场景脚本刷新组件 */
     setPreviewLang(previewLang: string) {
         const workspace = Editor.Project.path;
         StorageMgr.saveState({ previewLang }, workspace);
         I18nDataMgr.setPreviewLang(previewLang);
+
+        try {
+            // 通过 IPC 执行场景脚本 onPreviewLangChanged，促使 Scene 场景控件全场重绘
+            Editor.Message.send('scene', 'execute-scene-script', {
+                name: packageJSON.name,
+                method: 'onPreviewLangChanged',
+                args: [previewLang],
+            });
+        } catch (e) {}
+
+        Editor.Message.send('scene', 'snapshot');
     },
 
     /** 重新加载多语言 CSV 数据 */
     reloadCsvData() {
         const workspace = Editor.Project.path;
         I18nDataMgr.loadCsvData(workspace, (msg, level) => console.log(`[gcore I18n] [${level || 'info'}] ${msg}`));
+
+        try {
+            Editor.Message.send('scene', 'execute-scene-script', {
+                name: packageJSON.name,
+                method: 'onPreviewLangChanged',
+                args: [],
+            });
+        } catch (e) {}
+
+        Editor.Message.send('scene', 'snapshot');
     },
 };
 

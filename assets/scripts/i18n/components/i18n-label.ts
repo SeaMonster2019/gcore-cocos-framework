@@ -1,6 +1,7 @@
 import { _decorator, CCString, Component, Label } from "cc";
 import { EDITOR } from "cc/env";
 import { GCoreEvent, gcoreEvent } from "../../event";
+import { I18nEditorUtil } from "../editor/i18n-editor-util";
 import { i18n } from "../i18n-mgr";
 
 const { ccclass, property, menu, executeInEditMode } = _decorator;
@@ -13,35 +14,31 @@ export class I18nLabel extends Component {
 
     /** 多语言 key */
     @property({ displayName: "Key", tooltip: "多语言 key" })
-    public get i18nKey(): string {
-        return this._key;
-    }
-    public set i18nKey(value: string) {
-        this._key = value;
-        this.refresh();
-    }
+    public i18nKey = "";
 
     /** 默认文本 */
     @property({ displayName: "Fallback", tooltip: "当 key 不存在时显示的默认文本" })
-    public get fallback(): string {
-        return this._fallback;
-    }
-    public set fallback(value: string) {
-        this._fallback = value;
-        this.refresh();
-    }
+    public fallback = "";
 
     /** 占位参数 */
     @property({ type: [CCString], displayName: "Params", tooltip: "占位参数，按顺序替换 {0}、{1}..." })
     public params: string[] = [];
+
     /** 文本组件 */
     @property({ displayName: "Label", tooltip: "要显示文本的 Label 组件，如果不设置会自动获取当前节点上的 Label 组件" })
     public label: Label | null = null;
 
-    @property({ visible: false })
-    protected _key: string = "";
-    @property({ visible: false })
-    protected _fallback: string = ""
+    /** 在 Inspector 中点击触发原生 Key 选择菜单 */
+    @property({ displayName: "🔍 选择 Key (点击弹出菜单)", tooltip: "勾选或点击此项以弹出 Cocos 编辑器原生多语言 Key 选择菜单" })
+    public get selectKey(): boolean {
+        return false;
+    }
+
+    public set selectKey(val: boolean) {
+        if (EDITOR) {
+            I18nEditorUtil.openKeySelectorMenu((selectedKey) => this.setKey(selectedKey));
+        }
+    }
 
     /****************  生命周期方法  ****************/
 
@@ -79,6 +76,10 @@ export class I18nLabel extends Component {
             this.params = params.map((item) => String(item));
         }
         this.refresh();
+
+        if (EDITOR) {
+            I18nEditorUtil.notifyEditorUpdate(this.label);
+        }
     }
 
     /** 刷新文本显示 */
@@ -95,12 +96,13 @@ export class I18nLabel extends Component {
             const cached = i18n.getEditorText(this.i18nKey, this.fallback);
             this.label.string = this.format(cached);
 
-            // 异步通过 Cocos Editor.Message IPC 通信实时请求最新文本
+            // 异步从扩展获取最新文本
             i18n.getEditorTextAsync(this.i18nKey, this.fallback).then((text) => {
                 if (this.node && this.node.isValid && this.label) {
                     this.label.string = this.format(text);
+                    I18nEditorUtil.notifyEditorUpdate(this.label);
                 }
-            }).catch(() => { });
+            }).catch(() => {});
         } else {
             this.label.string = this.format(i18n.getText(this.i18nKey, this.fallback));
         }

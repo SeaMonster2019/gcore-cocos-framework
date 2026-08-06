@@ -12,6 +12,8 @@ export class I18nMgr {
     private _textMap: { [key: string]: string } = {};
     /** 编辑器实时预览字典映射 */
     private _editorTextMap: { [key: string]: string } = {};
+    /** 编辑器模式下上次加载的预览语言 */
+    private _editorPreviewLang = "";
     /** 编辑器模式下 CSV 是否已载入 */
     private _editorCsvLoaded = false;
 
@@ -27,6 +29,13 @@ export class I18nMgr {
 
     /****************  公共方法  ****************/
 
+    /** 编辑器模式下主动强行刷新预览语言 */
+    public reloadEditorPreviewLang(): void {
+        if (EDITOR) {
+            this._checkAndReloadEditorCsv(true);
+        }
+    }
+
     /** 编辑器模式下获取已缓存的实时预览文本
      * @param key 本地化 key
      * @param fallback 默认文本
@@ -36,8 +45,8 @@ export class I18nMgr {
         if (!key) {
             return fallback;
         }
-        if (!this._editorCsvLoaded && EDITOR) {
-            this._loadEditorCsvData();
+        if (EDITOR) {
+            this._checkAndReloadEditorCsv();
         }
         const val = this._editorTextMap[key];
         if (val !== undefined && val !== "") {
@@ -57,9 +66,9 @@ export class I18nMgr {
             return fallback;
         }
 
-        // 1. 优先使用本地 CSV 自动解析（适用于场景编辑器环境，无需重载扩展）
-        if (!this._editorCsvLoaded && EDITOR) {
-            this._loadEditorCsvData();
+        // 1. 优先检查并更新本地 CSV 预览（支持中英文等多语言实时切换）
+        if (EDITOR) {
+            this._checkAndReloadEditorCsv();
         }
         if (this._editorTextMap[key] !== undefined && this._editorTextMap[key] !== "") {
             return this._editorTextMap[key];
@@ -76,7 +85,7 @@ export class I18nMgr {
                 }
             }
         } catch (e) {
-            // 在消息未注册或扩展未重载时静默降级，避免报错
+            // 静默降级
         }
         return this.getText(key, fallback);
     }
@@ -181,32 +190,36 @@ export class I18nMgr {
         this._language = "";
         this._textMap = {};
         this._editorTextMap = {};
+        this._editorPreviewLang = "";
         this._editorCsvLoaded = false;
     }
 
     /****************  私有方法  ****************/
 
-    /** 编辑器模式下直接解析 CSV 多语言配置 */
-    private _loadEditorCsvData(): void {
+    /** 检查预览语言设置并动态重载 CSV 配置
+     * @param forceEmit 是否强制发送全场重绘事件
+     */
+    private _checkAndReloadEditorCsv(forceEmit = false): void {
         if (!EDITOR) {
             return;
         }
         try {
             const reqFunc = (typeof window !== 'undefined' ? (window as any).require : (globalThis as any).require);
-            if (typeof reqFunc !== 'function') {
+            const globalEditor = (typeof window !== 'undefined' ? (window as any).Editor : (globalThis as any).Editor);
+            const workspace = globalEditor?.Project?.path;
+            if (typeof reqFunc !== 'function' || !workspace) {
                 return;
             }
+
             const fs = reqFunc('fs');
             const path = reqFunc('path');
-            const globalEditor = (typeof window !== 'undefined' ? (window as any).Editor : (globalThis as any).Editor);
-            const projectPath = globalEditor?.Project?.path;
-            if (!fs || !path || !projectPath) {
+            if (!fs || !path) {
                 return;
             }
 
             // 读取选中的预览语言（优先从 temp/gcore-lang-state.json 读取）
             let previewLang = 'zh-Hans';
-            const stateFile = path.join(projectPath, 'temp', 'gcore-lang-state.json');
+            const stateFile = path.join(workspace, 'temp', 'gcore-lang-state.json');
             if (fs.existsSync(stateFile)) {
                 try {
                     const stateRaw = fs.readFileSync(stateFile, 'utf-8');
@@ -217,7 +230,27 @@ export class I18nMgr {
                 } catch (e) {}
             }
 
-            const csvDir = path.join(projectPath, 'design/配置/多语言/配置');
+            // 若预览语言变动或未曾载入，重载 CSV 数据并通知全场景组件刷新
+            const isLangChanged = (this._editorPreviewLang !== previewLang);
+            if (isLangChanged || !this._editorCsvLoaded || forceEmit) {
+                this._editorPreviewLang = previewLang;
+                this._loadEditorCsvData(previewLang, fs, path, workspace);
+                this._sendEvent();
+            }
+        } catch (e) {
+            // 静默降级
+        }
+    }
+
+    /** 编辑器模式下直接解析 CSV 多语言配置
+     * @param previewLang 预览语言代码
+     * @param fs Node.js fs 模块
+     * @param path Node.js path 模块
+     * @param workspace 工作区根路径
+     */
+    private _loadEditorCsvData(previewLang: string, fs: any, path: any, workspace: string): void {
+        try {
+            const csvDir = path.join(workspace, 'design/配置/多语言/配置');
             if (!fs.existsSync(csvDir)) {
                 return;
             }
@@ -244,7 +277,12 @@ export class I18nMgr {
                 const keyColIndex = headerCols.indexOf('key');
                 if (keyColIndex === -1) continue;
 
+                // 匹配列索引：先精确匹配 value@<lang>，再按主语言前缀匹配 (如 en-US 匹配 value@en)
                 let langColIndex = headerCols.indexOf(`value@${previewLang}`);
+                if (langColIndex === -1) {
+                    const shortLang = previewLang.split('-')[0];
+                    langColIndex = headerCols.findIndex((col: string) => col === `value@${shortLang}` || col.startsWith(`value@${shortLang}-`));
+                }
                 if (langColIndex === -1) {
                     langColIndex = headerCols.indexOf('value');
                 }
@@ -278,3 +316,12 @@ export class I18nMgr {
 }
 
 export const i18n = new I18nMgr();
+
+// 编辑器 Scene 进程中增加轻量定时监测（500ms），双重保证面板切换语言后秒级刷新
+if (EDITOR && typeof window !== 'undefined') {
+    setInterval(() => {
+        try {
+            i18n.reloadEditorPreviewLang();
+        } catch (e) {}
+    }, 500);
+}

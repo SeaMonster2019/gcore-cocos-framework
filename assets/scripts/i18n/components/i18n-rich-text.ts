@@ -1,6 +1,7 @@
 import { _decorator, CCString, Component, RichText } from "cc";
 import { EDITOR } from "cc/env";
 import { GCoreEvent, gcoreEvent } from "../../event";
+import { I18nEditorUtil } from "../editor/i18n-editor-util";
 import { i18n } from "../i18n-mgr";
 
 const { ccclass, property, menu, executeInEditMode } = _decorator;
@@ -22,6 +23,18 @@ export class I18nRichText extends Component {
     /** 占位参数 */
     @property({ type: [CCString], displayName: "Params", tooltip: "占位参数，按顺序替换 {0}、{1}..." })
     public params: string[] = [];
+
+    /** 在 Inspector 中点击触发原生 Key 选择菜单 */
+    @property({ displayName: "🔍 选择 Key (点击弹出菜单)", tooltip: "勾选或点击此项以弹出 Cocos 编辑器原生多语言 Key 选择菜单" })
+    public get selectKey(): boolean {
+        return false;
+    }
+
+    public set selectKey(val: boolean) {
+        if (EDITOR) {
+            I18nEditorUtil.openKeySelectorMenu((selectedKey) => this.setKey(selectedKey));
+        }
+    }
 
     /** 富文本组件 */
     private _richText: RichText | null = null;
@@ -60,6 +73,10 @@ export class I18nRichText extends Component {
             this.params = params.map((item) => String(item));
         }
         this.refresh();
+
+        if (EDITOR) {
+            I18nEditorUtil.notifyEditorUpdate(this._richText);
+        }
     }
 
     /** 刷新文本显示 */
@@ -80,6 +97,7 @@ export class I18nRichText extends Component {
             i18n.getEditorTextAsync(this.i18nKey, this.fallback).then((text) => {
                 if (this.node && this.node.isValid && this._richText) {
                     this._richText.string = this.format(text);
+                    I18nEditorUtil.notifyEditorUpdate(this._richText);
                 }
             }).catch(() => {});
         } else {

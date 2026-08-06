@@ -106,6 +106,9 @@
                 "path": "./assets",
                 "readonly": false
             }
+        },
+        "scene": {
+            "script": "./dist/scene-script.js"
         }
     },
     "files": [
