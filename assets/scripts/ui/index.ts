@@ -12,6 +12,7 @@ export * from "./components/operation/sliding-node";
 export * from "./components/prefab/prefab-create";
 export * from "./components/prefab/prefab-list";
 export * from "./components/prefab/prefab-pool";
+export * from "./components/prefab/prefab-pool-list";
 export * from "./components/vScroll/vscroll-view-item";
 export * from "./components/vScroll/vscroll-view";
 export * from "./components/render/shader2d";
