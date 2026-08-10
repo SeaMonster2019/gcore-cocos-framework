@@ -20,6 +20,11 @@ export class SlidingNode extends Component {
     @property({ displayName: '滑动比例' })
     public slideRatio: number = 1;
 
+    /** 缩放档位列表 */
+    private _gearList: number[] = [1];
+    /** 当前选择的缩放档位索引 */
+    private _selectGear: number = 0;
+
     /** 临时位置向量 */
     private _tempPos: Vec3 = new Vec3();
     /** 移动回调 */
@@ -105,6 +110,49 @@ export class SlidingNode extends Component {
         );
 
         this.moveNode.setPosition(constrainedPos);
+    }
+
+    /** 配置缩放档位列表及默认选中的档位索引（或传入目标索引）
+     * @param gearListOrIndex 缩放档位数组 number[]，或要切换的档位索引 number
+     * @param defaultIndex 默认选中的档位索引（当第一个参数为数组时生效，默认 0）
+     */
+    public setScaleGear(gearListOrIndex: number[] | number = [1], defaultIndex: number = 0): void {
+        if (typeof gearListOrIndex === 'number') {
+            this.setScaleGearIndex(gearListOrIndex);
+            return;
+        }
+
+        const gearList = (Array.isArray(gearListOrIndex) && gearListOrIndex.length > 0) ? gearListOrIndex : [1];
+        this._gearList = gearList;
+        this.setScaleGearIndex(defaultIndex);
+    }
+
+    /** 切换到指定索引的缩放档位
+     * @param index 档位索引
+     */
+    public setScaleGearIndex(index: number): void {
+        if (!this._gearList || this._gearList.length === 0) {
+            this._gearList = [1];
+        }
+
+        this._selectGear = math.clamp(index, 0, this._gearList.length - 1);
+        const scale = this._gearList[this._selectGear] ?? 1;
+
+        if (this.moveNode) {
+            this.moveNode.setScale(scale, scale, this.moveNode.scale.z);
+            this.clampPosition();
+            this._moveCallback?.(this.moveNode, this.judgeNode);
+        }
+    }
+
+    /** 增加一个缩放档位（档位索引 +1） */
+    public incScaleGear(): void {
+        this.setScaleGearIndex(this._selectGear + 1);
+    }
+
+    /** 减少一个缩放档位（档位索引 -1） */
+    public decScaleGear(): void {
+        this.setScaleGearIndex(this._selectGear - 1);
     }
 
     /****************  辅助计算方法  ****************/
