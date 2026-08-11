@@ -56,7 +56,7 @@ export class SlidingNode extends Component {
         this.clampPosition();
     }
 
-    /** 处理触摸移动事件：X 轴与 Y 轴完全独立计算约束并更新位置 */
+    /** 处理触摸移动事件：X 轴与 Y 轴完全独立计算约束并更新位置（将 UI 触摸增量精确转换至父节点本地空间） */
     private _onTouchMove(event: EventTouch): void {
         if (!this.moveNode || !this.judgeNode || !this.moveNode.parent) return;
 
@@ -67,11 +67,33 @@ export class SlidingNode extends Component {
 
         if (!moveUITrans || !judgeUITrans || !parentUITrans) return;
 
-        const delta = event.getDelta();
+        const curLoc = event.getUILocation();
+        let uiDeltaX = 0;
+        let uiDeltaY = 0;
+
+        if (typeof (event as any).getUIDelta === 'function') {
+            const uiDelta = (event as any).getUIDelta();
+            uiDeltaX = uiDelta.x;
+            uiDeltaY = uiDelta.y;
+        } else {
+            const delta = event.getDelta();
+            uiDeltaX = delta.x;
+            uiDeltaY = delta.y;
+        }
+
+        const tempVec3 = new Vec3(curLoc.x, curLoc.y, 0);
+        const curLocal = parentUITrans.convertToNodeSpaceAR(tempVec3);
+
+        tempVec3.set(curLoc.x - uiDeltaX, curLoc.y - uiDeltaY, 0);
+        const prevLocal = parentUITrans.convertToNodeSpaceAR(tempVec3);
+
+        const deltaX = curLocal.x - prevLocal.x;
+        const deltaY = curLocal.y - prevLocal.y;
+
         this._tempPos.set(this.moveNode.position);
 
-        const targetX = this._tempPos.x + delta.x * this.slideRatio;
-        const targetY = this._tempPos.y + delta.y * this.slideRatio;
+        const targetX = this._tempPos.x + deltaX * this.slideRatio;
+        const targetY = this._tempPos.y + deltaY * this.slideRatio;
 
         const constrainedPos = this._calculateIndependentConstrainedPosition(
             targetX,
@@ -153,6 +175,11 @@ export class SlidingNode extends Component {
     /** 减少一个缩放档位（档位索引 -1） */
     public decScaleGear(): void {
         this.setScaleGearIndex(this._selectGear - 1);
+    }
+
+    /** 获取当前选中的缩放档位 */
+    public getScaleGear(): number {
+        return this._selectGear;
     }
 
     /****************  辅助计算方法  ****************/
