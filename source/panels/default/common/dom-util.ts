@@ -56,19 +56,26 @@ export function queryElement<T extends HTMLElement = HTMLElement>(panel: any, se
     return null;
 }
 
+export interface PickFilter {
+    name: string;
+    extensions: string[];
+}
+
 /**
  * 封装调用 Cocos 编辑器原生对话框选择文件/文件夹
  * @param title 对话框标题
  * @param defaultPath 默认路径
  * @param type 选择类型 ('file' | 'directory')
  * @param workspace 工作区根目录
+ * @param filters 文件后缀名过滤器列表
  * @returns 选择的目标绝对路径，取消选择则返回空字符串
  */
 export async function pickPath(
     title: string,
     defaultPath: string,
     type: 'file' | 'directory',
-    workspace: string
+    workspace: string,
+    filters?: PickFilter[]
 ): Promise<string> {
     const editor = (globalThis as any).Editor;
     if (!editor?.Dialog?.select) {
@@ -85,7 +92,11 @@ export async function pickPath(
     };
 
     if (type === 'file') {
-        options.filters = [{ name: 'Luban Conf', extensions: ['conf', 'json'] }];
+        if (filters && filters.length > 0) {
+            options.filters = filters;
+        } else {
+            options.filters = [{ name: 'All Files', extensions: ['*'] }];
+        }
     }
 
     const result = await editor.Dialog.select(options);
@@ -105,6 +116,7 @@ export async function pickPath(
  * @param workspace 工作区根目录
  * @param onPick 选择完成回调函数
  * @param logger 日志打印回调
+ * @param filters 文件后缀名过滤器列表
  */
 export function bindPickerBtn(
     btn: HTMLButtonElement | null,
@@ -113,12 +125,13 @@ export function bindPickerBtn(
     type: 'file' | 'directory',
     workspace: string,
     onPick: (val: string) => void,
-    logger?: (msg: string, type?: 'info' | 'success' | 'error') => void
+    logger?: (msg: string, type?: 'info' | 'success' | 'error') => void,
+    filters?: PickFilter[]
 ): void {
     if (!btn || !inp) return;
     btn.addEventListener('click', async () => {
         try {
-            const picked = await pickPath(title, inp.value.trim(), type, workspace);
+            const picked = await pickPath(title, inp.value.trim(), type, workspace, filters);
             if (picked) {
                 const normalized = normalizePathForStorage(picked, workspace);
                 inp.value = normalized;

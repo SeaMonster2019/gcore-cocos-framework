@@ -4,7 +4,7 @@
  */
 
 /** 页签名称类型 */
-export type TabName = 'tab-1' | 'tab-2';
+export type TabName = 'tab-1' | 'tab-2' | 'tab-3';
 
 /** 日志类型 */
 export type LogType = 'info' | 'success' | 'error';
@@ -45,6 +45,13 @@ export interface LubanToolState {
     httpServerPort: number;
     /** 当前选中的预览语言代码 */
     previewLang: string;
+
+    /** .meta 清理目标目录 */
+    metaCleanDir: string;
+    /** 字体替换目标资源文件路径 */
+    fontFilePath: string;
+    /** 字体替换目标预制体/场景文件或文件夹路径 */
+    fontTargetLocation: string;
 }
 
 /** 面板上下文接口，用于向分面板传递全局能力 */

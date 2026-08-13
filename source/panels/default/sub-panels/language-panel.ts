@@ -69,7 +69,8 @@ export class LanguagePanel {
             'file',
             workspace,
             (val) => StorageMgr.saveState({ langConfFile: val }, workspace),
-            appendLog
+            appendLog,
+            [{ name: 'Luban Conf', extensions: ['conf', 'json'] }]
         );
 
         // 绑定“⚙ 语言管理”按钮 (按钮 A)

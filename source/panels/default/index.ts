@@ -11,6 +11,7 @@ import { StorageMgr } from './common/storage-mgr';
 import { LogCallback, LogType, PanelContext, TabName } from './common/types';
 import { ConfigPanel } from './sub-panels/config-panel';
 import { LanguagePanel } from './sub-panels/language-panel';
+import { ToolsPanel } from './sub-panels/tools-panel';
 
 /**
  * 切换页签管理器
@@ -39,7 +40,7 @@ function setupTabSwitcher(panel: any, initialTab: TabName = 'tab-1'): void {
     tabButtons.forEach((button: HTMLElement) => {
         button.addEventListener('click', () => {
             const tabId = button.getAttribute('data-tab') as TabName | null;
-            if (!tabId || (tabId !== 'tab-1' && tabId !== 'tab-2')) {
+            if (!tabId || (tabId !== 'tab-1' && tabId !== 'tab-2' && tabId !== 'tab-3')) {
                 return;
             }
             activateTab(tabId);
@@ -59,24 +60,35 @@ function initMainPanel(panel: any): void {
     const state = StorageMgr.loadState();
 
     // 基础公共控制节点
-    const statusArea = (panel.$ && panel.$.statusArea) || queryElement<HTMLElement>(panel, '#status-area');
+    const statusArea = (panel.$ && panel.$.statusArea) || queryElement<HTMLTextAreaElement>(panel, '#status-area');
     const clearLogBtn = (panel.$ && panel.$.clearLogBtn) || queryElement<HTMLButtonElement>(panel, '#clear-log-btn');
 
     /** 仅在扩展窗口面板日志区输出日志 */
     const appendLog: LogCallback = (msg: string, type: LogType = 'info') => {
-        const targetArea = (panel.$ && panel.$.statusArea) || statusArea || queryElement<HTMLElement>(panel, '#status-area');
+        const targetArea = (panel.$ && panel.$.statusArea) || statusArea || queryElement<HTMLTextAreaElement>(panel, '#status-area');
         if (targetArea) {
-            const cls = type === 'error' ? 'status-error' : type === 'success' ? 'status-success' : 'status-info';
-            targetArea.innerHTML += `<div class="${cls}">${escapeHtml(msg)}</div>`;
-            targetArea.scrollTop = targetArea.scrollHeight;
+            const prefix = type === 'error' ? '[ERROR] ' : type === 'success' ? '[SUCCESS] ' : '';
+            const logLine = `${prefix}${msg}\n`;
+            if ('value' in targetArea) {
+                targetArea.value += logLine;
+                targetArea.scrollTop = targetArea.scrollHeight;
+            } else {
+                const cls = type === 'error' ? 'status-error' : type === 'success' ? 'status-success' : 'status-info';
+                targetArea.innerHTML += `<div class="${cls}">${escapeHtml(msg)}</div>`;
+                targetArea.scrollTop = targetArea.scrollHeight;
+            }
         }
     };
 
     /** 清空面板日志 */
     const clearLog = () => {
-        const targetArea = (panel.$ && panel.$.statusArea) || statusArea || queryElement<HTMLElement>(panel, '#status-area');
+        const targetArea = (panel.$ && panel.$.statusArea) || statusArea || queryElement<HTMLTextAreaElement>(panel, '#status-area');
         if (targetArea) {
-            targetArea.textContent = '';
+            if ('value' in targetArea) {
+                targetArea.value = '';
+            } else {
+                targetArea.textContent = '';
+            }
         }
     };
 
@@ -109,6 +121,9 @@ function initMainPanel(panel: any): void {
 
     const languagePanel = new LanguagePanel(context);
     languagePanel.init();
+
+    const toolsPanel = new ToolsPanel(context);
+    toolsPanel.init();
 
     // 初始化页签切换功能
     setupTabSwitcher(panel, state.activeTab);
@@ -162,6 +177,18 @@ module.exports = Editor.Panel.define({
         newLangCode: '#new-lang-code',
         newLangName: '#new-lang-name',
         langListTbody: '#lang-list-tbody',
+
+        // 小工具集合分面板 DOM 选择器映射
+        metaCleanDir: '#meta-clean-dir',
+        metaCleanDirBtn: '#meta-clean-dir-btn',
+        cleanMetaBtn: '#clean-meta-btn',
+        fontFilePath: '#font-file-path',
+        fontFileBtn: '#font-file-btn',
+        fontTargetLoc: '#font-target-loc',
+        fontTargetCurrentBtn: '#font-target-current-btn',
+        fontTargetFileBtn: '#font-target-file-btn',
+        fontTargetDirBtn: '#font-target-dir-btn',
+        replaceFontBtn: '#replace-font-btn',
     },
     methods: {
     },

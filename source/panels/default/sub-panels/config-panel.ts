@@ -73,7 +73,8 @@ export class ConfigPanel {
             'file',
             workspace,
             (val) => StorageMgr.saveState({ cfgConfFile: val }),
-            appendLog
+            appendLog,
+            [{ name: 'Luban Conf', extensions: ['conf', 'json'] }]
         );
 
         bindPickerBtn(

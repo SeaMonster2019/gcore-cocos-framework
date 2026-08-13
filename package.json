@@ -99,6 +99,16 @@
                 "methods": [
                     "queryI18nAll"
                 ]
+            },
+            "on-font-replace-result": {
+                "methods": [
+                    "onFontReplaceResult"
+                ]
+            },
+            "on-current-asset-uuid": {
+                "methods": [
+                    "onCurrentAssetUuid"
+                ]
             }
         },
         "asset-db": {

@@ -63,6 +63,16 @@ export const methods: { [key: string]: (...any: any) => any } = {
 
         Editor.Message.send('scene', 'snapshot');
     },
+
+    /** 接收场景进程字体替换结果广播 */
+    onFontReplaceResult(result: any) {
+        console.log('[gcore-framework] 场景进程字体替换结果广播:', JSON.stringify(result));
+    },
+
+    /** 接收场景进程当前编辑资源 UUID 广播 */
+    onCurrentAssetUuid(data: any) {
+        console.log('[gcore-framework] 场景进程当前编辑资源 UUID 广播:', JSON.stringify(data));
+    },
 };
 
 /**

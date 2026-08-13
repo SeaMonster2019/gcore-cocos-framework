@@ -29,6 +29,9 @@ export const DEFAULT_STATE: LubanToolState = {
     httpServerEnabled: false,
     httpServerPort: 8989,
     previewLang: 'zh-Hans',
+    metaCleanDir: 'assets',
+    fontFilePath: '',
+    fontTargetLocation: 'assets',
 };
 
 /**
@@ -114,8 +117,9 @@ export class StorageMgr {
     private static parseAndMergeState(parsed: Partial<LubanToolState>): LubanToolState {
         const langs = Array.isArray(parsed.languages) ? parsed.languages : DEFAULT_STATE.languages;
         const langDirs = parsed.langDataDirs || { ...DEFAULT_STATE.langDataDirs };
+        const validTab = parsed.activeTab === 'tab-2' || parsed.activeTab === 'tab-3' ? parsed.activeTab : 'tab-1';
         return {
-            activeTab: parsed.activeTab === 'tab-2' ? 'tab-2' : 'tab-1',
+            activeTab: validTab,
             cfgConfFile: parsed.cfgConfFile ?? DEFAULT_STATE.cfgConfFile,
             cfgCodeDir: parsed.cfgCodeDir ?? DEFAULT_STATE.cfgCodeDir,
             cfgDataDir: parsed.cfgDataDir ?? DEFAULT_STATE.cfgDataDir,
@@ -126,6 +130,9 @@ export class StorageMgr {
             httpServerEnabled: false,
             httpServerPort: 8989,
             previewLang: parsed.previewLang ?? DEFAULT_STATE.previewLang,
+            metaCleanDir: parsed.metaCleanDir ?? DEFAULT_STATE.metaCleanDir,
+            fontFilePath: parsed.fontFilePath ?? DEFAULT_STATE.fontFilePath,
+            fontTargetLocation: parsed.fontTargetLocation ?? DEFAULT_STATE.fontTargetLocation,
         };
     }
 }
