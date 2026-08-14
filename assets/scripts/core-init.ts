@@ -1,9 +1,8 @@
 import { _decorator, Canvas, Component, EventHandler, isValid, Node, Prefab } from "cc";
 import { EventTarget } from "./event/index";
 import { gcoreMvc } from "./mvc/index";
-import { gcoreRes, gcoreConfig } from "./res/index";
-import { gcoreStorage } from "./storage/index";
-import { gcoreI18n } from "./i18n/index";
+import { gcoreRes } from "./res/index";
+import { gcoreConfig, gcoreStorage } from "./storage/index";
 
 const { property, ccclass, menu } = _decorator;
 

@@ -1,5 +1,5 @@
 import { sys } from "cc";
-import { gcoreStorage } from "../storage";
+import { gcoreStorage } from "./index";
 
 /** 存储系统 / 游戏配置管理器 */
 export class ConfigMgr {
