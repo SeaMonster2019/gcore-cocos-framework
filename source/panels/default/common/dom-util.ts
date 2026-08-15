@@ -143,3 +143,144 @@ export function bindPickerBtn(
         }
     });
 }
+
+/**
+ * 封装调用 Cocos 编辑器/系统原生保存文件对话框
+ * @param title 对话框标题
+ * @param defaultPath 默认路径
+ * @param workspace 工作区根目录
+ * @param filters 文件后缀名过滤器列表
+ * @returns 选中的保存文件绝对路径，取消则返回空字符串
+ */
+export async function pickSavePath(
+    title: string,
+    defaultPath: string,
+    workspace: string,
+    filters?: PickFilter[]
+): Promise<string> {
+    const editor = (globalThis as any).Editor;
+    const resolvedDefault = resolvePathForExec(defaultPath || '', workspace);
+    const saveFilters = filters && filters.length > 0 ? filters : [
+        { name: 'Font File (*.ttf)', extensions: ['ttf'] },
+        { name: 'All Files (*.*)', extensions: ['*'] },
+    ];
+
+    // 1. 优先使用 Cocos Creator 3.x 标准的 Editor.Dialog.save
+    if (editor?.Dialog?.save && typeof editor.Dialog.save === 'function') {
+        try {
+            const result = await editor.Dialog.save({
+                title,
+                path: resolvedDefault || undefined,
+                button: '保存',
+                filters: saveFilters,
+            });
+            // 用户显式点击“取消”或关闭窗口，直接返回空，避免降级触发二次弹窗
+            if (!result || result.canceled) {
+                return '';
+            }
+            if (typeof result === 'string') {
+                return result;
+            }
+            if (result.filePath) {
+                return result.filePath;
+            }
+            return '';
+        } catch (e) {
+            console.warn('[pickSavePath] Editor.Dialog.save 执行异常，尝试 fallback:', e);
+        }
+    }
+
+    // 2. 尝试 Electron dialog
+    try {
+        // @ts-ignore
+        const electron = typeof require !== 'undefined' ? require('electron') : null;
+        const dialog = electron?.dialog || electron?.remote?.dialog;
+        if (dialog?.showSaveDialog) {
+            const result = await dialog.showSaveDialog({
+                title,
+                defaultPath: resolvedDefault || undefined,
+                buttonLabel: '保存',
+                filters: saveFilters,
+            });
+            if (!result || result.canceled) {
+                return '';
+            }
+            if (result.filePath) {
+                return result.filePath;
+            }
+            return '';
+        }
+    } catch (e) {}
+
+    // 3. Fallback 到 Editor.Dialog.select
+    if (editor?.Dialog?.select) {
+        try {
+            const result = await editor.Dialog.select({
+                title,
+                type: 'file',
+                path: resolvedDefault || undefined,
+                button: '保存',
+                filters: saveFilters,
+            });
+            if (!result || result.canceled || !result.filePaths || result.filePaths.length === 0) {
+                return '';
+            }
+            return result.filePaths[0] as string;
+        } catch (e) {}
+    }
+
+    return '';
+}
+
+/**
+ * 复制纯文本内容到系统剪贴板
+ * @param text 需要复制的文本
+ * @returns 是否复制成功
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+    if (!text) return false;
+
+    // 1. 尝试使用 Electron native clipboard
+    try {
+        const electron = (window as any).require ? (window as any).require('electron') : null;
+        if (electron && electron.clipboard && typeof electron.clipboard.writeText === 'function') {
+            electron.clipboard.writeText(text);
+            return true;
+        }
+    } catch (e) {}
+
+    // 2. 尝试使用 Cocos Creator Editor.Clipboard
+    try {
+        const editor = (window as any).Editor;
+        if (editor && editor.Clipboard && typeof editor.Clipboard.write === 'function') {
+            editor.Clipboard.write('text', text);
+            return true;
+        }
+    } catch (e) {}
+
+    // 3. 尝试使用标准 Web navigator.clipboard
+    try {
+        if (navigator && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+    } catch (e) {}
+
+    // 4. 降级使用 textarea + document.execCommand('copy')
+    try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return successful;
+    } catch (e) {
+        return false;
+    }
+}
+

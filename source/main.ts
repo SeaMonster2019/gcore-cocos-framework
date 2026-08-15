@@ -73,6 +73,35 @@ export const methods: { [key: string]: (...any: any) => any } = {
     onCurrentAssetUuid(data: any) {
         console.log('[gcore-framework] 场景进程当前编辑资源 UUID 广播:', JSON.stringify(data));
     },
+
+    /** 通过 IPC 消息检测指定字体在某多语言下是否存在缺字 */
+    checkFontMissing(fontPath: string, langCode: string) {
+        const workspace = Editor.Project.path;
+        return require('./panels/default/common/font-checker').FontChecker.check(workspace, fontPath, langCode);
+    },
+
+    /** 通过 IPC 消息执行字体抽字压缩 (子集化) */
+    subsetFont(fontPath: string, textFilePath: string, targetFontPath: string, extraChars?: string) {
+        const workspace = Editor.Project.path;
+        return require('./panels/default/common/font-subsetter').FontSubsetter.subset(
+            workspace,
+            fontPath,
+            textFilePath,
+            targetFontPath,
+            extraChars
+        );
+    },
+
+    /** 通过 IPC 消息执行字体格式转换 (.ttf / .otf / .woff2 / .woff) */
+    convertFont(fontPath: string, targetFormat: any, targetFontPath: string) {
+        const workspace = Editor.Project.path;
+        return require('./panels/default/common/font-converter').FontConverter.convert(
+            workspace,
+            fontPath,
+            targetFormat,
+            targetFontPath
+        );
+    },
 };
 
 /**

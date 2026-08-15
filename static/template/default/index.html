@@ -2,7 +2,8 @@
     <div class="tab-header">
         <button class="tab-btn active" data-tab="tab-1">配置表转表</button>
         <button class="tab-btn" data-tab="tab-2">多语言转表</button>
-        <button class="tab-btn" data-tab="tab-3">小工具集合</button>
+        <button class="tab-btn" data-tab="tab-3">字体工具</button>
+        <button class="tab-btn" data-tab="tab-4">小工具集合</button>
     </div>
     <div class="tab-content">
         <!-- Tab 1: 配置表转表 -->
@@ -77,32 +78,89 @@
             </div>
         </div>
 
-        <!-- Tab 3: 小工具集合 -->
+        <!-- Tab 3: 字体工具 -->
         <div class="tab-pane" id="tab-3">
-            <h2>小工具集合</h2>
-            <p class="tab-desc">提供开发过程中的辅助高效工具，包括残留 .meta 无效文件清理与场景/预制体字体快速替换。</p>
+            <h2>字体工具</h2>
+            <p class="tab-desc">提供全面的字体处理能力，包括多语言缺字检测、文本抽字子集化压缩以及 TTF/OTF/WOFF2 格式互转。</p>
 
-            <!-- 工具 1: .meta 文件清理工具 -->
+            <!-- 工具 1: 字体缺字检测工具 -->
             <div class="tool-card">
-                <h3>1. .meta 文件清理工具</h3>
+                <h3>1. 字体缺字检测工具</h3>
                 <p class="tab-desc" style="margin-bottom:8px;">
-                    针对 Cocos Creator 3.8 删除或重命名文件/文件夹后可能残留无效 .meta 文件的 Bug。选择目标目录，自动扫描并清理找不到对应文件/文件夹的残留 .meta 文件。
+                    选择目标字体文件并指定某种多语言，工具将解析字体支持的完整字符映射表，与该语言下所有文本条目进行全量比对，精确检测是否存在字体缺少字符（缺字/字形缺失）的情况。
                 </p>
                 <div class="form-group">
-                    <label>目标清理文件夹：</label>
+                    <label>待检测字体文件 (.ttf / .otf / .fnt)：</label>
                     <div class="file-picker">
-                        <input id="meta-clean-dir" type="text" placeholder="assets" />
-                        <button id="meta-clean-dir-btn" type="button">选择文件夹</button>
+                        <input id="font-check-file-path" type="text" placeholder="assets/pack/pack-core/font/TerrarumSans.ttf" />
+                        <button id="font-check-file-btn" type="button">选择字体文件</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>检测目标多语言（根据多语言配置）：</label>
+                    <div class="input-inline">
+                        <select id="font-check-lang-select" style="min-width: 180px;"></select>
                     </div>
                 </div>
                 <div class="btn-row" style="margin-top: 8px;">
-                    <button id="clean-meta-btn" class="primary-btn" type="button">开始扫描并清理 .meta 文件</button>
+                    <button id="check-font-btn" class="primary-btn" type="button">开始检测字体缺字</button>
+                    <button id="check-font-and-copy-btn" class="primary-btn" type="button" style="margin-left: 8px;">开始检测字体缺字并复制</button>
                 </div>
             </div>
 
-            <!-- 工具 2: 字体替换工具 -->
+            <!-- 工具 2: 字体抽字压缩工具 (子集化) -->
             <div class="tool-card">
-                <h3>2. 字体替换工具</h3>
+                <h3>2. 字体抽字压缩工具 (子集化)</h3>
+                <p class="tab-desc" style="margin-bottom:8px;">
+                    从源字体文件中仅抽取出指定参考文本文件（如 .txt、.json、.csv 等）中包含的字符，精简剥离多余字形，极大程度减小字体文件体积（压缩率可达 90%~99%）。点击导出时将弹出系统窗口选择保存位置与文件名。
+                </p>
+                <div class="form-group">
+                    <label>源字体文件 (.ttf / .otf)：</label>
+                    <div class="file-picker">
+                        <input id="font-subset-source-font" type="text" placeholder="assets/pack/pack-core/font/TerrarumSans.ttf" />
+                        <button id="font-subset-source-btn" type="button">选择字体文件</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>参考文本文件 (.txt / .json / .csv / .md 等)：</label>
+                    <div class="file-picker">
+                        <input id="font-subset-text-file" type="text" placeholder="design/配置/多语言/配置/界面.csv (或自定义 .txt 文本)" />
+                        <button id="font-subset-text-btn" type="button">选择文本文件</button>
+                    </div>
+                </div>
+                <div class="btn-row" style="margin-top: 8px;">
+                    <button id="subset-font-btn" class="primary-btn" type="button">开始抽字压缩并导出...</button>
+                </div>
+            </div>
+
+            <!-- 工具 3: 字体格式互转工具 (.ttf / .otf) -->
+            <div class="tool-card">
+                <h3>3. 字体格式互转工具 (.ttf / .otf)</h3>
+                <p class="tab-desc" style="margin-bottom:8px;">
+                    提供 .ttf 与 .otf 字体格式之间的高性能无损相互转换。点击转换时将弹出系统窗口选择保存位置与文件名。
+                </p>
+                <div class="form-group">
+                    <label>源字体文件 (.ttf / .otf)：</label>
+                    <div class="file-picker">
+                        <input id="font-convert-source-font" type="text" placeholder="assets/pack/pack-core/font/TerrarumSans.ttf" />
+                        <button id="font-convert-source-btn" type="button">选择源文件</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>目标转换格式：</label>
+                    <div class="input-inline">
+                        <select id="font-convert-target-format" style="min-width: 180px;">
+                            <option value="ttf">TrueType (.ttf) - 通用字体格式</option>
+                            <option value="otf">OpenType (.otf) - 矢量轮廓格式</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-row" style="margin-top: 8px;">
+                    <button id="convert-font-btn" class="primary-btn" type="button">开始格式转换并导出...</button>
+                </div>
+            <!-- 工具 4: 预制体/场景字体批量替换工具 -->
+            <div class="tool-card">
+                <h3>4. 预制体/场景字体批量替换工具</h3>
                 <p class="tab-desc" style="margin-bottom:8px;">
                     选中字体资源文件，直接修改预制体 (.prefab) 与场景 (.scene) 文件结构，将所有 Label 与 RichText 文本组件字体批量替换为目标字体。
                 </p>
@@ -124,6 +182,30 @@
                 </div>
                 <div class="btn-row" style="margin-top: 8px;">
                     <button id="replace-font-btn" class="primary-btn" type="button">批量替换预制体/场景字体 (直接修改文件)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: 小工具集合 -->
+        <div class="tab-pane" id="tab-4">
+            <h2>小工具集合</h2>
+            <p class="tab-desc">提供开发过程中的辅助高效工具，包括残留 .meta 无效文件清理等实用小工具。</p>
+
+            <!-- 工具 1: .meta 文件清理工具 -->
+            <div class="tool-card">
+                <h3>1. .meta 文件清理工具</h3>
+                <p class="tab-desc" style="margin-bottom:8px;">
+                    针对 Cocos Creator 3.8 删除或重命名文件/文件夹后可能残留无效 .meta 文件的 Bug。选择目标目录，自动扫描并清理找不到对应文件/文件夹的残留 .meta 文件。
+                </p>
+                <div class="form-group">
+                    <label>目标清理文件夹：</label>
+                    <div class="file-picker">
+                        <input id="meta-clean-dir" type="text" placeholder="assets" />
+                        <button id="meta-clean-dir-btn" type="button">选择文件夹</button>
+                    </div>
+                </div>
+                <div class="btn-row" style="margin-top: 8px;">
+                    <button id="clean-meta-btn" class="primary-btn" type="button">开始扫描并清理 .meta 文件</button>
                 </div>
             </div>
         </div>

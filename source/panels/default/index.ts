@@ -10,6 +10,7 @@ import { escapeHtml, getWorkspacePath } from './common/path-util';
 import { StorageMgr } from './common/storage-mgr';
 import { LogCallback, LogType, PanelContext, TabName } from './common/types';
 import { ConfigPanel } from './sub-panels/config-panel';
+import { FontPanel } from './sub-panels/font-panel';
 import { LanguagePanel } from './sub-panels/language-panel';
 import { ToolsPanel } from './sub-panels/tools-panel';
 
@@ -17,8 +18,9 @@ import { ToolsPanel } from './sub-panels/tools-panel';
  * 切换页签管理器
  * @param panel 面板实例
  * @param initialTab 初始激活页签
+ * @param onTabChange 页签变更回调
  */
-function setupTabSwitcher(panel: any, initialTab: TabName = 'tab-1'): void {
+function setupTabSwitcher(panel: any, initialTab: TabName = 'tab-1', onTabChange?: (tabId: TabName) => void): void {
     const tabHeader = (panel.$ && panel.$.tabHeader) || queryElement(panel, '.tab-header');
     if (!tabHeader) return;
 
@@ -35,12 +37,16 @@ function setupTabSwitcher(panel: any, initialTab: TabName = 'tab-1'): void {
 
         activeButton?.classList.add('active');
         activePane?.classList.add('active');
+
+        if (onTabChange) {
+            onTabChange(tabId);
+        }
     };
 
     tabButtons.forEach((button: HTMLElement) => {
         button.addEventListener('click', () => {
             const tabId = button.getAttribute('data-tab') as TabName | null;
-            if (!tabId || (tabId !== 'tab-1' && tabId !== 'tab-2' && tabId !== 'tab-3')) {
+            if (!tabId || (tabId !== 'tab-1' && tabId !== 'tab-2' && tabId !== 'tab-3' && tabId !== 'tab-4')) {
                 return;
             }
             activateTab(tabId);
@@ -122,11 +128,18 @@ function initMainPanel(panel: any): void {
     const languagePanel = new LanguagePanel(context);
     languagePanel.init();
 
+    const fontPanel = new FontPanel(context);
+    fontPanel.init();
+
     const toolsPanel = new ToolsPanel(context);
     toolsPanel.init();
 
     // 初始化页签切换功能
-    setupTabSwitcher(panel, state.activeTab);
+    setupTabSwitcher(panel, state.activeTab, (tabId) => {
+        if (tabId === 'tab-3') {
+            fontPanel.updateLanguageOptions();
+        }
+    });
 }
 
 /** Cocos Creator 扩展面板标准导出定义 */
@@ -178,10 +191,21 @@ module.exports = Editor.Panel.define({
         newLangName: '#new-lang-name',
         langListTbody: '#lang-list-tbody',
 
-        // 小工具集合分面板 DOM 选择器映射
-        metaCleanDir: '#meta-clean-dir',
-        metaCleanDirBtn: '#meta-clean-dir-btn',
-        cleanMetaBtn: '#clean-meta-btn',
+        // 字体工具分面板 DOM 选择器映射 (Tab 3)
+        fontCheckFilePath: '#font-check-file-path',
+        fontCheckFileBtn: '#font-check-file-btn',
+        fontCheckLangSelect: '#font-check-lang-select',
+        checkFontBtn: '#check-font-btn',
+        checkFontAndCopyBtn: '#check-font-and-copy-btn',
+        fontSubsetSourceFont: '#font-subset-source-font',
+        fontSubsetSourceBtn: '#font-subset-source-btn',
+        fontSubsetTextFile: '#font-subset-text-file',
+        fontSubsetTextBtn: '#font-subset-text-btn',
+        subsetFontBtn: '#subset-font-btn',
+        fontConvertSourceFont: '#font-convert-source-font',
+        fontConvertSourceBtn: '#font-convert-source-btn',
+        fontConvertTargetFormat: '#font-convert-target-format',
+        convertFontBtn: '#convert-font-btn',
         fontFilePath: '#font-file-path',
         fontFileBtn: '#font-file-btn',
         fontTargetLoc: '#font-target-loc',
@@ -189,6 +213,11 @@ module.exports = Editor.Panel.define({
         fontTargetFileBtn: '#font-target-file-btn',
         fontTargetDirBtn: '#font-target-dir-btn',
         replaceFontBtn: '#replace-font-btn',
+
+        // 小工具集合分面板 DOM 选择器映射 (Tab 4)
+        metaCleanDir: '#meta-clean-dir',
+        metaCleanDirBtn: '#meta-clean-dir-btn',
+        cleanMetaBtn: '#clean-meta-btn',
     },
     methods: {
     },

@@ -13,25 +13,30 @@ const STORAGE_KEY = 'gcore-framework.luban-tool.state';
 /** 默认初始状态数据 */
 export const DEFAULT_STATE: LubanToolState = {
     activeTab: 'tab-1',
-    cfgConfFile: 'design/配置/配置表/luban.conf',
-    cfgCodeDir: 'assets/scripts/config/base',
-    cfgDataDir: 'assets/resources/config',
-    langConfFile: 'design/配置/多语言/luban.conf',
-    langCodeDir: 'assets/scripts/localization/base',
+    cfgConfFile: '',
+    cfgCodeDir: '',
+    cfgDataDir: '',
+    langConfFile: '',
+    langCodeDir: '',
     languages: [
         { code: 'zh-Hans', name: '中文' },
         { code: 'en', name: '英文' },
     ],
-    langDataDirs: {
-        'zh-Hans': 'assets/language/pack-zh-Hans',
-        'en': 'assets/language/pack-en',
-    },
+    langDataDirs: {},
     httpServerEnabled: false,
     httpServerPort: 8989,
     previewLang: 'zh-Hans',
-    metaCleanDir: 'assets',
+    metaCleanDir: '',
     fontFilePath: '',
-    fontTargetLocation: 'assets',
+    fontTargetLocation: '',
+    fontCheckFilePath: '',
+    fontCheckLang: 'zh-Hans',
+    fontSubsetSourceFont: '',
+    fontSubsetTextFile: '',
+    fontSubsetTargetFont: '',
+    fontConvertSourceFont: '',
+    fontConvertTargetFormat: 'ttf',
+    fontConvertTargetFont: '',
 };
 
 /**
@@ -117,7 +122,7 @@ export class StorageMgr {
     private static parseAndMergeState(parsed: Partial<LubanToolState>): LubanToolState {
         const langs = Array.isArray(parsed.languages) ? parsed.languages : DEFAULT_STATE.languages;
         const langDirs = parsed.langDataDirs || { ...DEFAULT_STATE.langDataDirs };
-        const validTab = parsed.activeTab === 'tab-2' || parsed.activeTab === 'tab-3' ? parsed.activeTab : 'tab-1';
+        const validTab = parsed.activeTab === 'tab-2' || parsed.activeTab === 'tab-3' || parsed.activeTab === 'tab-4' ? parsed.activeTab : 'tab-1';
         return {
             activeTab: validTab,
             cfgConfFile: parsed.cfgConfFile ?? DEFAULT_STATE.cfgConfFile,
@@ -133,6 +138,14 @@ export class StorageMgr {
             metaCleanDir: parsed.metaCleanDir ?? DEFAULT_STATE.metaCleanDir,
             fontFilePath: parsed.fontFilePath ?? DEFAULT_STATE.fontFilePath,
             fontTargetLocation: parsed.fontTargetLocation ?? DEFAULT_STATE.fontTargetLocation,
+            fontCheckFilePath: parsed.fontCheckFilePath ?? DEFAULT_STATE.fontCheckFilePath,
+            fontCheckLang: parsed.fontCheckLang ?? DEFAULT_STATE.fontCheckLang,
+            fontSubsetSourceFont: parsed.fontSubsetSourceFont ?? DEFAULT_STATE.fontSubsetSourceFont,
+            fontSubsetTextFile: parsed.fontSubsetTextFile ?? DEFAULT_STATE.fontSubsetTextFile,
+            fontSubsetTargetFont: parsed.fontSubsetTargetFont ?? DEFAULT_STATE.fontSubsetTargetFont,
+            fontConvertSourceFont: parsed.fontConvertSourceFont ?? DEFAULT_STATE.fontConvertSourceFont,
+            fontConvertTargetFormat: parsed.fontConvertTargetFormat === 'otf' ? 'otf' : 'ttf',
+            fontConvertTargetFont: parsed.fontConvertTargetFont ?? DEFAULT_STATE.fontConvertTargetFont,
         };
     }
 }
