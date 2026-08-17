@@ -572,11 +572,16 @@ export class FontPanel {
     private async executeFontReplaceFiles(): Promise<void> {
         const { workspace, appendLog } = this.context;
         const state = StorageMgr.loadState(workspace);
-        const fontPathRel = state.fontFilePath;
-        const targetLocRel = state.fontTargetLocation || 'assets';
+        const fontPathRel = (this.fontFilePathInp && this.fontFilePathInp.value.trim()) || state.fontFilePath;
+        const targetLocRel = (this.fontTargetLocInp && this.fontTargetLocInp.value.trim()) || state.fontTargetLocation;
 
         if (!fontPathRel) {
             appendLog('请先选择目标字体资源文件 (.ttf / .otf / .fnt)。', 'error');
+            return;
+        }
+
+        if (!targetLocRel) {
+            appendLog('请先选择目标预制体/场景文件或文件夹路径。', 'error');
             return;
         }
 

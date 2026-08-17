@@ -129,13 +129,13 @@ export class LanguagePanel {
         if (containerDirs) {
             containerDirs.innerHTML = '';
             currentState.languages.forEach((lang) => {
-                const dirPath = currentState.langDataDirs[lang.code] || `assets/language/pack-${lang.code}`;
+                const dirPath = currentState.langDataDirs[lang.code] || '';
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'form-group';
                 groupDiv.innerHTML = `
                     <label>${escapeHtml(lang.name)} (${escapeHtml(lang.code)}) 数据输出目录：</label>
                     <div class="file-picker">
-                        <input id="lang-data-${escapeHtml(lang.code)}" type="text" value="${escapeHtml(dirPath)}" placeholder="assets/language/pack-${escapeHtml(lang.code)}" />
+                        <input id="lang-data-${escapeHtml(lang.code)}" type="text" value="${escapeHtml(dirPath)}" placeholder="" />
                         <button type="button" id="lang-data-btn-${escapeHtml(lang.code)}">选择文件夹</button>
                     </div>
                 `;

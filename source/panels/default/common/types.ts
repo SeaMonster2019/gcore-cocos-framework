@@ -4,7 +4,7 @@
  */
 
 /** 页签名称类型 */
-export type TabName = 'tab-1' | 'tab-2' | 'tab-3' | 'tab-4';
+export type TabName = 'tab-1' | 'tab-2' | 'tab-3' | 'tab-4' | 'tab-5';
 
 /** 日志类型 */
 export type LogType = 'info' | 'success' | 'error';
@@ -18,6 +18,24 @@ export interface LanguageItem {
     code: string;
     /** 语言展示名称 (如: 中文, 英文, 日文) */
     name: string;
+}
+
+/** 项目根目录下 gcore-config.json 的持久化配置结构 */
+export interface GCoreProjectConfig {
+    /** 配置表配置文件路径 (luban.conf) */
+    cfgConfFile?: string;
+    /** 配置表代码输出目录 (outputCodeDir) */
+    cfgCodeDir?: string;
+    /** 配置表数据输出目录 (outputDataDir) */
+    cfgDataDir?: string;
+    /** 多语言配置文件路径 (luban.conf) */
+    langConfFile?: string;
+    /** 多语言代码输出目录 (outputCodeDir) */
+    langCodeDir?: string;
+    /** 已配置的多语言列表 */
+    languages?: LanguageItem[];
+    /** 各语言的数据输出目录映射表 (langCode -> outputDataDir) */
+    langDataDirs?: Record<string, string>;
 }
 
 /** Luban 工具面板完整持久化状态数据结构 */
@@ -68,6 +86,8 @@ export interface LubanToolState {
     fontConvertTargetFormat: 'ttf' | 'otf';
     /** 字体格式转换导出的目标字体文件路径 */
     fontConvertTargetFont: string;
+    /** 自定义工程根目录路径 (为空时默认使用当前 Cocos 工程根目录) */
+    projectRootDir: string;
 }
 
 /** 面板上下文接口，用于向分面板传递全局能力 */

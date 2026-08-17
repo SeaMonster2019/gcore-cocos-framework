@@ -75,7 +75,11 @@ export class ToolsPanel {
     private executeMetaClean(): void {
         const { workspace, appendLog } = this.context;
         const state = StorageMgr.loadState(workspace);
-        const targetDirRel = state.metaCleanDir || 'assets';
+        const targetDirRel = (this.metaCleanDirInp && this.metaCleanDirInp.value.trim()) || state.metaCleanDir;
+        if (!targetDirRel) {
+            appendLog(`[.meta 清理失败] 请先选择或输入需要清理的目标文件夹路径`, 'error');
+            return;
+        }
         const targetDirAbs = targetDirRel.startsWith(workspace) ? targetDirRel : join(workspace, targetDirRel);
 
         if (!existsSync(targetDirAbs)) {

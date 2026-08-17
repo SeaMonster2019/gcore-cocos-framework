@@ -4,6 +4,7 @@
         <button class="tab-btn" data-tab="tab-2">多语言转表</button>
         <button class="tab-btn" data-tab="tab-3">字体工具</button>
         <button class="tab-btn" data-tab="tab-4">小工具集合</button>
+        <button class="tab-btn" data-tab="tab-5">工具设置</button>
     </div>
     <div class="tab-content">
         <!-- Tab 1: 配置表转表 -->
@@ -14,7 +15,7 @@
             <div class="form-group">
                 <label>配置文件 (luban.conf)：</label>
                 <div class="file-picker">
-                    <input id="cfg-conf-file" type="text" placeholder="design/配置/配置表/luban.conf" />
+                    <input id="cfg-conf-file" type="text" placeholder="" />
                     <button id="cfg-conf-btn" type="button">选择文件</button>
                 </div>
             </div>
@@ -22,7 +23,7 @@
             <div class="form-group">
                 <label>代码输出目录 (outputCodeDir)：</label>
                 <div class="file-picker">
-                    <input id="cfg-code-dir" type="text" placeholder="assets/scripts/config/base" />
+                    <input id="cfg-code-dir" type="text" placeholder="" />
                     <button id="cfg-code-btn" type="button">选择文件夹</button>
                 </div>
             </div>
@@ -30,7 +31,7 @@
             <div class="form-group">
                 <label>数据输出目录 (outputDataDir)：</label>
                 <div class="file-picker">
-                    <input id="cfg-data-dir" type="text" placeholder="assets/resources/config" />
+                    <input id="cfg-data-dir" type="text" placeholder="" />
                     <button id="cfg-data-btn" type="button">选择文件夹</button>
                 </div>
             </div>
@@ -54,7 +55,7 @@
             <div class="form-group">
                 <label>配置文件 (luban.conf)：</label>
                 <div class="file-picker">
-                    <input id="lang-conf-file" type="text" placeholder="design/配置/多语言/luban.conf" />
+                    <input id="lang-conf-file" type="text" placeholder="" />
                     <button id="lang-conf-btn" type="button">选择文件</button>
                 </div>
             </div>
@@ -92,7 +93,7 @@
                 <div class="form-group">
                     <label>待检测字体文件 (.ttf / .otf / .fnt)：</label>
                     <div class="file-picker">
-                        <input id="font-check-file-path" type="text" placeholder="assets/pack/pack-core/font/TerrarumSans.ttf" />
+                        <input id="font-check-file-path" type="text" placeholder="" />
                         <button id="font-check-file-btn" type="button">选择字体文件</button>
                     </div>
                 </div>
@@ -117,14 +118,14 @@
                 <div class="form-group">
                     <label>源字体文件 (.ttf / .otf)：</label>
                     <div class="file-picker">
-                        <input id="font-subset-source-font" type="text" placeholder="assets/pack/pack-core/font/TerrarumSans.ttf" />
+                        <input id="font-subset-source-font" type="text" placeholder="" />
                         <button id="font-subset-source-btn" type="button">选择字体文件</button>
                     </div>
                 </div>
                 <div class="form-group">
                     <label>参考文本文件 (.txt / .json / .csv / .md 等)：</label>
                     <div class="file-picker">
-                        <input id="font-subset-text-file" type="text" placeholder="design/配置/多语言/配置/界面.csv (或自定义 .txt 文本)" />
+                        <input id="font-subset-text-file" type="text" placeholder="" />
                         <button id="font-subset-text-btn" type="button">选择文本文件</button>
                     </div>
                 </div>
@@ -142,7 +143,7 @@
                 <div class="form-group">
                     <label>源字体文件 (.ttf / .otf)：</label>
                     <div class="file-picker">
-                        <input id="font-convert-source-font" type="text" placeholder="assets/pack/pack-core/font/TerrarumSans.ttf" />
+                        <input id="font-convert-source-font" type="text" placeholder="" />
                         <button id="font-convert-source-btn" type="button">选择源文件</button>
                     </div>
                 </div>
@@ -158,6 +159,8 @@
                 <div class="btn-row" style="margin-top: 8px;">
                     <button id="convert-font-btn" class="primary-btn" type="button">开始格式转换并导出...</button>
                 </div>
+            </div>
+
             <!-- 工具 4: 预制体/场景字体批量替换工具 -->
             <div class="tool-card">
                 <h3>4. 预制体/场景字体批量替换工具</h3>
@@ -167,14 +170,14 @@
                 <div class="form-group">
                     <label>目标字体文件 (.ttf / .otf / .fnt)：</label>
                     <div class="file-picker">
-                        <input id="font-file-path" type="text" placeholder="assets/res/font/TerrarumSans.ttf" />
+                        <input id="font-file-path" type="text" placeholder="" />
                         <button id="font-file-btn" type="button">选择字体文件</button>
                     </div>
                 </div>
                 <div class="form-group">
                     <label>目标预制体/场景 (支持选择 .prefab/.scene 文件或目标文件夹)：</label>
                     <div class="file-picker">
-                        <input id="font-target-loc" type="text" placeholder="assets (或如: assets/pack/pack-main/prefab)" />
+                        <input id="font-target-loc" type="text" placeholder="" />
                         <button id="font-target-current-btn" class="action-btn" type="button" title="自动定位并填入 Cocos 编辑器中当前打开编辑的场景或预制体文件">选中当前打开</button>
                         <button id="font-target-file-btn" type="button">选择文件</button>
                         <button id="font-target-dir-btn" type="button">选择文件夹</button>
@@ -200,12 +203,33 @@
                 <div class="form-group">
                     <label>目标清理文件夹：</label>
                     <div class="file-picker">
-                        <input id="meta-clean-dir" type="text" placeholder="assets" />
+                        <input id="meta-clean-dir" type="text" placeholder="" />
                         <button id="meta-clean-dir-btn" type="button">选择文件夹</button>
                     </div>
                 </div>
                 <div class="btn-row" style="margin-top: 8px;">
                     <button id="clean-meta-btn" class="primary-btn" type="button">开始扫描并清理 .meta 文件</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 5: 工具设置 -->
+        <div class="tab-pane" id="tab-5">
+            <h2>工具设置</h2>
+            <p class="tab-desc">配置 GCore 扩展工具的基础运行参数与工程根目录路径。</p>
+
+            <div class="tool-card">
+                <h3>工程根目录设置</h3>
+                <p class="tab-desc" style="margin-bottom:8px;">
+                    指定项目的工程根目录路径。设置后，<strong>gcore-config.json</strong> 配置文件将依据此目录进行持久化读取与保存。
+                </p>
+                <div class="form-group">
+                    <label>工程根目录路径：</label>
+                    <div class="file-picker">
+                        <input id="project-root-dir" type="text" placeholder="" />
+                        <button id="project-root-btn" type="button">选择文件夹</button>
+                        <button id="project-root-clear-btn" class="action-btn" type="button">清除已选文件夹</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -229,8 +253,8 @@
             </div>
             <div class="modal-body">
                 <div class="add-lang-row">
-                    <input id="new-lang-code" type="text" placeholder="语言代码 (如: zh-Hans, en, ja)" />
-                    <input id="new-lang-name" type="text" placeholder="语言名称 (如: 中文, 英文, 日文)" />
+                    <input id="new-lang-code" type="text" placeholder="语言代码 (如: zh-Hans, en)" />
+                    <input id="new-lang-name" type="text" placeholder="语言名称 (如: 中文, 英文)" />
                     <button id="add-lang-btn" class="primary-btn" type="button">添加语言</button>
                 </div>
                 <div class="lang-table-wrapper">

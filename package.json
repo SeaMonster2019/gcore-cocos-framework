@@ -13,45 +13,53 @@
     "description": "i18n:gcore-framework.description",
     "main": "./dist/main.js",
     "exports": {
-        "./event": {
-            "types": "./assets/scripts/event/index.ts",
-            "default": "./assets/scripts/event/index.ts"
+        "./base/container": {
+            "types": "./assets/scripts/base/container/index.ts",
+            "default": "./assets/scripts/base/container/index.ts"
         },
-        "./storage": {
-            "types": "./assets/scripts/storage/index.ts",
-            "default": "./assets/scripts/storage/index.ts"
+        "./base/math": {
+            "types": "./assets/scripts/base/math/index.ts",
+            "default": "./assets/scripts/base/math/index.ts"
         },
-        "./utils": {
-            "types": "./assets/scripts/utils/index.ts",
-            "default": "./assets/scripts/utils/index.ts"
+        "./system/event": {
+            "types": "./assets/scripts/system/event/index.ts",
+            "default": "./assets/scripts/system/event/index.ts"
         },
-        "./res": {
-            "types": "./assets/scripts/res/index.ts",
-            "default": "./assets/scripts/res/index.ts"
+        "./system/storage": {
+            "types": "./assets/scripts/system/storage/index.ts",
+            "default": "./assets/scripts/system/storage/index.ts"
         },
-        "./mvc": {
-            "types": "./assets/scripts/mvc/index.ts",
-            "default": "./assets/scripts/mvc/index.ts"
+        "./system/fsm": {
+            "types": "./assets/scripts/system/fsm/index.ts",
+            "default": "./assets/scripts/system/fsm/index.ts"
         },
-        "./ui": {
-            "types": "./assets/scripts/ui/index.ts",
-            "default": "./assets/scripts/ui/index.ts"
+        "./system/debug": {
+            "types": "./assets/scripts/system/debug/index.ts",
+            "default": "./assets/scripts/system/debug/index.ts"
         },
-        "./i18n": {
-            "types": "./assets/scripts/i18n/index.ts",
-            "default": "./assets/scripts/i18n/index.ts"
+        "./integration/res": {
+            "types": "./assets/scripts/integration/res/index.ts",
+            "default": "./assets/scripts/integration/res/index.ts"
         },
-        "./fsm": {
-            "types": "./assets/scripts/fsm/index.ts",
-            "default": "./assets/scripts/fsm/index.ts"
+        "./integration/mvc": {
+            "types": "./assets/scripts/integration/mvc/index.ts",
+            "default": "./assets/scripts/integration/mvc/index.ts"
         },
-        "./audio": {
-            "types": "./assets/scripts/audio/index.ts",
-            "default": "./assets/scripts/audio/index.ts"
+        "./integration/ui": {
+            "types": "./assets/scripts/integration/ui/index.ts",
+            "default": "./assets/scripts/integration/ui/index.ts"
         },
-        "./core-init": {
-            "types": "./assets/scripts/core-init.ts",
-            "default": "./assets/scripts/core-init.ts"
+        "./integration/i18n": {
+            "types": "./assets/scripts/integration/i18n/index.ts",
+            "default": "./assets/scripts/integration/i18n/index.ts"
+        },
+        "./integration/audio": {
+            "types": "./assets/scripts/integration/audio/index.ts",
+            "default": "./assets/scripts/integration/audio/index.ts"
+        },
+        "./integration/core-init": {
+            "types": "./assets/scripts/integration/core-init.ts",
+            "default": "./assets/scripts/integration/core-init.ts"
         }
     },
     "dependencies": {

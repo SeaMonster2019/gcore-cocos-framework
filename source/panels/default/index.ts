@@ -12,6 +12,7 @@ import { LogCallback, LogType, PanelContext, TabName } from './common/types';
 import { ConfigPanel } from './sub-panels/config-panel';
 import { FontPanel } from './sub-panels/font-panel';
 import { LanguagePanel } from './sub-panels/language-panel';
+import { SettingsPanel } from './sub-panels/settings-panel';
 import { ToolsPanel } from './sub-panels/tools-panel';
 
 /**
@@ -46,7 +47,7 @@ function setupTabSwitcher(panel: any, initialTab: TabName = 'tab-1', onTabChange
     tabButtons.forEach((button: HTMLElement) => {
         button.addEventListener('click', () => {
             const tabId = button.getAttribute('data-tab') as TabName | null;
-            if (!tabId || (tabId !== 'tab-1' && tabId !== 'tab-2' && tabId !== 'tab-3' && tabId !== 'tab-4')) {
+            if (!tabId || (tabId !== 'tab-1' && tabId !== 'tab-2' && tabId !== 'tab-3' && tabId !== 'tab-4' && tabId !== 'tab-5')) {
                 return;
             }
             activateTab(tabId);
@@ -134,6 +135,9 @@ function initMainPanel(panel: any): void {
     const toolsPanel = new ToolsPanel(context);
     toolsPanel.init();
 
+    const settingsPanel = new SettingsPanel(context);
+    settingsPanel.init();
+
     // 初始化页签切换功能
     setupTabSwitcher(panel, state.activeTab, (tabId) => {
         if (tabId === 'tab-3') {
@@ -218,6 +222,11 @@ module.exports = Editor.Panel.define({
         metaCleanDir: '#meta-clean-dir',
         metaCleanDirBtn: '#meta-clean-dir-btn',
         cleanMetaBtn: '#clean-meta-btn',
+
+        // 工具设置分面板 DOM 选择器映射 (Tab 5)
+        projectRootDir: '#project-root-dir',
+        projectRootBtn: '#project-root-btn',
+        projectRootClearBtn: '#project-root-clear-btn',
     },
     methods: {
     },
