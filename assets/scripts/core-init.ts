@@ -1,4 +1,5 @@
 import { _decorator, Canvas, Component, EventHandler, isValid, Node, Prefab } from "cc";
+import { gcoreAudio } from "./audio/index";
 import { EventTarget } from "./event/index";
 import { gcoreMvc } from "./mvc/index";
 import { gcoreRes } from "./res/index";
@@ -11,22 +12,28 @@ const { property, ccclass, menu } = _decorator;
 @menu("GCore/GCoreInit")
 export class GCoreInit extends Component {
 
-    /** 根节点 */
+    /** 根节点：用于挂载所有UI界面的根节点，作为UI层级的父节点 */
     @property({ type: Node, displayName: `根节点`, tooltip: `用于挂载所有UI界面的根节点，作为UI层级的父节点` })
     private declare root: Node;
-    /** 主画布 */
+
+    /** 主画布：主UI画布组件，用于自适应屏幕大小 */
     @property({ type: Canvas, displayName: `主画布`, tooltip: `主UI画布组件，用于自适应屏幕大小` })
     private declare mainCanvas: Canvas;
-    /** 游戏开始函数 */
+
+    /** 游戏开始函数：用于在游戏开始时调用，不用生命周期函数是为了防止初始化顺序错误 */
     @property({ type: EventHandler, displayName: '游戏开始函数', tooltip: '游戏开始函数，用于在游戏开始时调用，不用生命周期函数是为了防止初始化顺序错误' })
     private gameHandler: EventHandler = new EventHandler();
 
-    /** 加载 */
+    /****************  生命周期方法  ****************/
+
+    /** 组件加载初始化 */
     protected onLoad(): void {
         this._init();
     }
 
-    /** 初始化 */
+    /****************  核心初始化  ****************/
+
+    /** 执行框架各单例模块的初始化流程 */
     private _init(): void {
         // 静态注入事件系统的失效校验函数，彻底解除事件系统模块对 cc 的物理导入依赖
         EventTarget.isValidChecker = isValid;
@@ -35,6 +42,7 @@ export class GCoreInit extends Component {
         gcoreStorage.init();
         gcoreRes.init();
         gcoreConfig.init();
+        gcoreAudio.init(this.root || this.node);
         gcoreMvc.init({
             root: this.root,
             viewPrefabFunc: (prefab: string, pack: string) => {
@@ -47,5 +55,4 @@ export class GCoreInit extends Component {
 
         EventHandler.emitEvents([this.gameHandler], null);
     }
-
 }

@@ -73,8 +73,7 @@ export class ResLoadMgr {
 
     /****************  Bundle 策略配置  ****************/
 
-    /** 
-     * 设置 Bundle 资源生命周期策略
+    /**  设置 Bundle 资源生命周期策略
      * 设为私有：禁止运行时动态切换策略，只能在加载时定义
      */
     private setBundlePolicy(packName: string, policy: EResBundlePolicy): void {

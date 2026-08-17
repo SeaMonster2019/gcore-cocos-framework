@@ -45,6 +45,10 @@
             "types": "./assets/scripts/fsm/index.ts",
             "default": "./assets/scripts/fsm/index.ts"
         },
+        "./audio": {
+            "types": "./assets/scripts/audio/index.ts",
+            "default": "./assets/scripts/audio/index.ts"
+        },
         "./core-init": {
             "types": "./assets/scripts/core-init.ts",
             "default": "./assets/scripts/core-init.ts"
