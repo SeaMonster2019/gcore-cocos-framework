@@ -1,16 +1,16 @@
-import { _decorator, CCString, Component, Label } from "cc";
+import { _decorator, CCString, Component, RichText } from "cc";
 import { EDITOR } from "cc/env";
-import { GCoreEvent, gcoreEvent } from "../../event";
+import { GCoreEvent, gcoreEvent } from "../../../system/event";
 import { I18nEditorUtil } from "../editor/i18n-editor-util";
 import { i18n } from "../i18n-mgr";
 
 const { ccclass, property, menu, executeInEditMode } = _decorator;
 
-/** 程序多语言文本组件 */
-@ccclass("I18nLabel")
-@menu("Game/I18n/I18nLabel")
+/** 程序多语言富文本组件 */
+@ccclass("I18nRichText")
+@menu("Game/I18n/I18nRichText")
 @executeInEditMode
-export class I18nLabel extends Component {
+export class I18nRichText extends Component {
 
     /** 多语言 key */
     @property({ displayName: "Key", tooltip: "多语言 key" })
@@ -24,10 +24,6 @@ export class I18nLabel extends Component {
     @property({ type: [CCString], displayName: "Params", tooltip: "占位参数，按顺序替换 {0}、{1}..." })
     public params: string[] = [];
 
-    /** 文本组件 */
-    @property({ displayName: "Label", tooltip: "要显示文本的 Label 组件，如果不设置会自动获取当前节点上的 Label 组件" })
-    public label: Label | null = null;
-
     /** 在 Inspector 中点击触发原生 Key 选择菜单 */
     @property({ displayName: "🔍 选择 Key (点击弹出菜单)", tooltip: "勾选或点击此项以弹出 Cocos 编辑器原生多语言 Key 选择菜单" })
     public get selectKey(): boolean {
@@ -40,13 +36,14 @@ export class I18nLabel extends Component {
         }
     }
 
+    /** 富文本组件 */
+    private _richText: RichText | null = null;
+
     /****************  生命周期方法  ****************/
 
     /** 节点加载 */
     protected onLoad(): void {
-        if (!this.label) {
-            this.label = this.getComponent(Label);
-        }
+        this._richText = this.getComponent(RichText);
     }
 
     /** 节点使能 */
@@ -78,33 +75,33 @@ export class I18nLabel extends Component {
         this.refresh();
 
         if (EDITOR) {
-            I18nEditorUtil.notifyEditorUpdate(this.label);
+            I18nEditorUtil.notifyEditorUpdate(this._richText);
         }
     }
 
     /** 刷新文本显示 */
     public refresh(): void {
-        if (!this.label) {
-            this.label = this.getComponent(Label);
+        if (!this._richText) {
+            this._richText = this.getComponent(RichText);
         }
-        if (!this.label || !this.i18nKey) {
+        if (!this._richText || !this.i18nKey) {
             return;
         }
 
         if (EDITOR) {
             // 缓存获取（0ms 无阻塞）
             const cached = i18n.getEditorText(this.i18nKey, this.fallback);
-            this.label.string = this.format(cached);
+            this._richText.string = this.format(cached);
 
-            // 异步从扩展获取最新文本
+            // 异步通过 Cocos Editor.Message IPC 通信实时请求最新文本
             i18n.getEditorTextAsync(this.i18nKey, this.fallback).then((text) => {
-                if (this.node && this.node.isValid && this.label) {
-                    this.label.string = this.format(text);
-                    I18nEditorUtil.notifyEditorUpdate(this.label);
+                if (this.node && this.node.isValid && this._richText) {
+                    this._richText.string = this.format(text);
+                    I18nEditorUtil.notifyEditorUpdate(this._richText);
                 }
             }).catch(() => {});
         } else {
-            this.label.string = this.format(i18n.getText(this.i18nKey, this.fallback));
+            this._richText.string = this.format(i18n.getText(this.i18nKey, this.fallback));
         }
     }
 

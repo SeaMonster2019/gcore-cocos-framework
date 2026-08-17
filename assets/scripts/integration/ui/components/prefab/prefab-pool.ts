@@ -1,5 +1,5 @@
 import { _decorator, CCFloat, CCInteger, Component, instantiate, Node, Prefab } from "cc";
-import { Pool } from "../../../utils/index";
+import { Pool } from "../../../../base/container";
 
 const { ccclass, property, menu } = _decorator;
 

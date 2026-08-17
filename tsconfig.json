@@ -1,9 +1,9 @@
 {
-    "$schema": "https://schemastore.azurewebsites.net/schemas/json/tsconfig.json",
+    "$schema": "https://json.schemastore.org/tsconfig",
     "compilerOptions": {
         "target": "ES2017",
-        "moduleResolution": "nodenext",
-        "module": "nodenext",
+        "moduleResolution": "NodeNext",
+        "module": "NodeNext",
         "inlineSourceMap": true,
         "inlineSources": true,
         "esModuleInterop": true,
@@ -16,7 +16,7 @@
         "rootDir": "./source",
         "types": [
             "@cocos/creator-types/engine",
-            "@cocos/creator-types/editor",
+            "@cocos/creator-types/editor"
         ]
     },
     "include": [

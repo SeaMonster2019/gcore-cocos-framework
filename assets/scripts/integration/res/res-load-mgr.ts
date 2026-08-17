@@ -1,5 +1,5 @@
-import { Asset, AssetManager, Sprite, SpriteAtlas, SpriteFrame } from "cc";
-import { gcoreEvent, GCoreEvent } from "../event/index";
+import { Asset, assetManager, AssetManager, AudioClip, Constructor, isValid, Prefab, resources } from "cc";
+import { gcoreEvent, GCoreEvent } from "../../system/event/index";
 
 type Bundle = AssetManager.Bundle;
 

@@ -1,6 +1,6 @@
 import { _decorator, CCBoolean, CCFloat, CCInteger, Component, instantiate, Node, Prefab } from 'cc';
 import { EDITOR } from 'cc/env';
-import { Pool } from "../../../utils/index";
+import { Pool } from "../../../../base/container";
 
 const { ccclass, property, menu } = _decorator;
 

@@ -1,5 +1,5 @@
 import { BaseUi } from "../ui/index";
-import { gcoreEvent } from "../event/index";
+import { gcoreEvent } from "../../system/event/index";
 import { BaseCtrl } from "./base-ctrl";
 import { BaseModel } from "./base-model";
 import { IViewParams, IView } from "./mvc-interface";

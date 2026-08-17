@@ -1,6 +1,6 @@
 import { BufferAsset } from "cc";
 import { EDITOR } from "cc/env";
-import { GCoreEvent, gcoreEvent } from "../event";
+import { GCoreEvent, gcoreEvent } from "../../system/event";
 import ByteBuf from "./base/ByteBuf";
 
 /** 程序本地化表管理器 */

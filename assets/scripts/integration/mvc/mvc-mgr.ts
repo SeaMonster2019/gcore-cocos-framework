@@ -1,5 +1,5 @@
-import { instantiate, isValid, Node, screen, UITransform, view } from "cc";
-import { gcoreEvent, GCoreEvent } from "../event/index";
+import { isValid, js, Node } from "cc";
+import { gcoreEvent, GCoreEvent } from "../../system/event/index";
 import { BaseCtrl } from "./base-ctrl";
 import { BaseModel } from "./base-model";
 import { IMvcMrgParams, IMvcParams, IViewHandle, IViewParamMap, IViewParams, ViewId, ViewOpenArgs, ViewType } from "./mvc-interface";
