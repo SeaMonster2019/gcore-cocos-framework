@@ -1,9 +1,9 @@
 import { _decorator, AudioClip, Canvas, Component, EventHandler, isValid, Node, Prefab } from "cc";
-import { EventTarget } from "../system/event";
-import { gcoreConfig, gcoreStorage } from "../system/storage";
-import { gcoreAudio } from "./audio";
-import { gcoreMvc } from "./mvc";
-import { gcoreRes } from "./res";
+import { EventTarget } from "./system/event";
+import { gcoreConfig, gcoreStorage } from "./system/storage";
+import { gcoreAudio } from "./integration/audio";
+import { gcoreMvc } from "./integration/mvc";
+import { gcoreRes } from "./integration/res";
 
 const { property, ccclass, menu } = _decorator;
 
