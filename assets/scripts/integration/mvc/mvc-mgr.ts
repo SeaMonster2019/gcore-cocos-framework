@@ -1,4 +1,4 @@
-import { isValid, js, Node } from "cc";
+import { instantiate, isValid, js, Node, Prefab, screen, UITransform, view } from "cc";
 import { gcoreEvent, GCoreEvent } from "../../system/event/index";
 import { BaseCtrl } from "./base-ctrl";
 import { BaseModel } from "./base-model";
@@ -23,10 +23,10 @@ export class MvcMgr {
     /** 实例id自增计数器 */
     private _iid: number = 0;
 
-    /****************  初始化与注册  ****************/
+    /****************  初始化  ****************/
 
-    /** 初始化MVC管理器，设置根节点和资源加载函数，并监听窗口大小变化
-     * @param params MVC构造器参数
+    /** 初始化MVC管理器
+     * @param params 初始化参数
      */
     public init(params: IMvcMrgParams) {
         this._params = params;
@@ -36,8 +36,8 @@ export class MvcMgr {
         }
 
         // 移除旧监听后重新注册，防止重复绑定
-        screen.off(`window-resize`, this._onWindowResize.bind(this), this);
-        screen.on(`window-resize`, this._onWindowResize.bind(this), this);
+        screen.off('window-resize', this._onWindowResize, this);
+        screen.on('window-resize', this._onWindowResize, this);
     }
 
     /** 注册单个MVC模块，创建对应的Model和Ctrl实例
