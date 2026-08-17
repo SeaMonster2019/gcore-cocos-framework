@@ -1,7 +1,6 @@
-import { AudioClip, AudioSource, isValid, Node, Tween, tween } from "cc";
-import { gcoreRes } from "../res/index";
+import { AudioClip, AudioSource, isValid, Node, Tween, tween, assetManager, resources } from "cc";
 import { AudioConfig } from "./audio-config";
-import { IAudioMusicOptions, IAudioMusicStackItem } from "./audio-types";
+import { AudioLoadClipFunc, AudioReleaseClipFunc, IAudioMusicOptions, IAudioMusicStackItem } from "./audio-types";
 
 /** 背景音乐通道
  * 提供双轨平滑淡入淡出 (CrossFade)、历史栈 (push/pop)、循环控制及资源安全管理
@@ -12,6 +11,10 @@ export class MusicChannel {
     private _config: AudioConfig;
     /** 挂载 AudioSource 组件的主节点 */
     private _hostNode: Node | null = null;
+    /** 音频剪辑加载委托 */
+    private _loadClipFunc: AudioLoadClipFunc | null = null;
+    /** 音频剪辑释放委托 */
+    private _releaseClipFunc: AudioReleaseClipFunc | null = null;
     /** 双轨 AudioSource 组件，用于 CrossFade 过渡 */
     private _sources: [AudioSource, AudioSource] = [null!, null!];
     /** 当前活跃轨道索引 (0 或 1) */
@@ -68,10 +71,14 @@ export class MusicChannel {
 
     /** 初始化通道，在 hostNode 上挂载双轨 AudioSource
      * @param hostNode 挂载 AudioSource 的宿主节点
+     * @param loadClipFunc 音频加载委托
+     * @param releaseClipFunc 音频释放委托
      */
-    public init(hostNode: Node): void {
+    public init(hostNode: Node, loadClipFunc?: AudioLoadClipFunc | null, releaseClipFunc?: AudioReleaseClipFunc | null): void {
         this._stopTweens();
         this._hostNode = hostNode;
+        this._loadClipFunc = loadClipFunc || null;
+        this._releaseClipFunc = releaseClipFunc || null;
         const trackA = hostNode.addComponent(AudioSource);
         const trackB = hostNode.addComponent(AudioSource);
         trackA.loop = true;
@@ -105,7 +112,7 @@ export class MusicChannel {
         if (typeof source === "string") {
             path = source;
             try {
-                clip = await gcoreRes.loadRes<AudioClip>(path, bundle);
+                clip = await this._loadClip(path, bundle);
             } catch (e) {
                 console.error(`[MusicChannel] Failed to load BGM: ${path} in bundle ${bundle}`, e);
                 return false;
@@ -118,14 +125,14 @@ export class MusicChannel {
         // 如果在加载期间有新的播放请求发生，则丢弃本次结果并释放加载的资源
         if (serial !== this._playSerial) {
             if (typeof source === "string") {
-                gcoreRes.releaseRes(path, bundle);
+                this._releaseClip(path, bundle);
             }
             return false;
         }
 
         if (!clip || !this._hostNode || !isValid(this._hostNode)) {
             if (typeof source === "string") {
-                gcoreRes.releaseRes(path, bundle);
+                this._releaseClip(path, bundle);
             }
             return false;
         }
@@ -133,7 +140,7 @@ export class MusicChannel {
         // 如果播放的是当前已经在播放且未暂停的相同曲目，直接调整音量并平衡引用计数
         if (this._currentClip === clip && this.isPlaying && !this._isPaused) {
             if (typeof source === "string") {
-                gcoreRes.releaseRes(path, bundle);
+                this._releaseClip(path, bundle);
             }
             this._currentRelativeVol = relativeVol;
             this.updateVolume();
@@ -169,7 +176,7 @@ export class MusicChannel {
             oldSource.stop();
             oldSource.volume = 0;
             if (oldPath && oldPath !== path) {
-                gcoreRes.releaseRes(oldPath, oldBundle);
+                this._releaseClip(oldPath, oldBundle);
             }
 
             nextSource.volume = targetVolume;
@@ -226,14 +233,14 @@ export class MusicChannel {
         this._isPaused = false;
 
         if (!curSource || !curSource.playing) {
-            if (oldPath) gcoreRes.releaseRes(oldPath, oldBundle);
+            if (oldPath) this._releaseClip(oldPath, oldBundle);
             return;
         }
 
         if (fadeDuration <= 0) {
             curSource.stop();
             curSource.volume = 0;
-            if (oldPath) gcoreRes.releaseRes(oldPath, oldBundle);
+            if (oldPath) this._releaseClip(oldPath, oldBundle);
         } else {
             this._pendingReleasePath = oldPath;
             this._pendingReleaseBundle = oldBundle;
@@ -341,9 +348,36 @@ export class MusicChannel {
     /** 释放尚未清理的旧音乐资源引用 */
     private _flushPendingRelease(): void {
         if (this._pendingReleasePath) {
-            gcoreRes.releaseRes(this._pendingReleasePath, this._pendingReleaseBundle);
+            this._releaseClip(this._pendingReleasePath, this._pendingReleaseBundle);
             this._pendingReleasePath = "";
             this._pendingReleaseBundle = "";
         }
+    }
+
+    /** 加载音频剪辑资源 */
+    private async _loadClip(path: string, bundle: string): Promise<AudioClip | null> {
+        if (this._loadClipFunc) {
+            return this._loadClipFunc(path, bundle);
+        }
+        const b = assetManager.getBundle(bundle) || resources;
+        return new Promise<AudioClip | null>((resolve) => {
+            b.load(path, AudioClip, (err, asset) => {
+                if (err || !asset) {
+                    resolve(null);
+                } else {
+                    resolve(asset);
+                }
+            });
+        });
+    }
+
+    /** 释放音频剪辑资源引用 */
+    private _releaseClip(path: string, bundle: string): void {
+        if (this._releaseClipFunc) {
+            this._releaseClipFunc(path, bundle);
+            return;
+        }
+        const b = assetManager.getBundle(bundle) || resources;
+        b.release(path, AudioClip);
     }
 }

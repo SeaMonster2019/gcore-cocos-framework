@@ -1,7 +1,6 @@
-import { AudioClip, AudioSource, isValid, Node } from "cc";
-import { gcoreRes } from "../res/index";
+import { AudioClip, AudioSource, isValid, Node, assetManager, resources } from "cc";
 import { AudioConfig } from "./audio-config";
-import { IAudioEffectOptions } from "./audio-types";
+import { AudioLoadClipFunc, AudioReleaseClipFunc, IAudioEffectOptions } from "./audio-types";
 
 /** 活跃音效实例信息 */
 interface IActiveEffectInfo {
@@ -41,6 +40,10 @@ export class EffectChannel {
     private _config: AudioConfig;
     /** 挂载 AudioSource 组件的主节点 */
     private _hostNode: Node | null = null;
+    /** 音频剪辑加载委托 */
+    private _loadClipFunc: AudioLoadClipFunc | null = null;
+    /** 音频剪辑释放委托 */
+    private _releaseClipFunc: AudioReleaseClipFunc | null = null;
     /** 可复用的 AudioSource 对象池 */
     private _pool: AudioSource[] = [];
     /** 正在播放的活跃音效表 (audioId -> Info) */
@@ -60,14 +63,18 @@ export class EffectChannel {
 
     /** 初始化音效通道并预创建初始对象池
      * @param hostNode 挂载 AudioSource 的宿主节点
+     * @param loadClipFunc 音频加载委托
+     * @param releaseClipFunc 音频释放委托
      * @param initialPoolSize 初始预创建的 AudioSource 数量，默认为 8
      */
-    public init(hostNode: Node, initialPoolSize: number = 8): void {
+    public init(hostNode: Node, loadClipFunc?: AudioLoadClipFunc | null, releaseClipFunc?: AudioReleaseClipFunc | null, initialPoolSize: number = 8): void {
         this.stopAllEffects();
         this._pool = [];
         this._activeMap.clear();
         this._throttleMap.clear();
         this._hostNode = hostNode;
+        this._loadClipFunc = loadClipFunc || null;
+        this._releaseClipFunc = releaseClipFunc || null;
         for (let i = 0; i < initialPoolSize; i++) {
             const src = hostNode.addComponent(AudioSource);
             src.loop = false;
@@ -115,7 +122,7 @@ export class EffectChannel {
             }
 
             try {
-                clip = await gcoreRes.loadRes<AudioClip>(path, bundle);
+                clip = await this._loadClip(path, bundle);
             } catch (e) {
                 console.error(`[EffectChannel] Failed to load effect: ${path} in bundle ${bundle}`, e);
                 return -1;
@@ -127,7 +134,7 @@ export class EffectChannel {
 
         if (!clip || !isValid(this._hostNode)) {
             if (typeof source === "string") {
-                gcoreRes.releaseRes(path, bundle);
+                this._releaseClip(path, bundle);
             }
             return -1;
         }
@@ -136,7 +143,7 @@ export class EffectChannel {
         const audioSource = this._acquireAudioSource();
         if (!audioSource) {
             if (typeof source === "string") {
-                gcoreRes.releaseRes(path, bundle);
+                this._releaseClip(path, bundle);
             }
             return -1;
         }
@@ -300,7 +307,7 @@ export class EffectChannel {
         }
 
         if (info.path) {
-            gcoreRes.releaseRes(info.path, info.bundle);
+            this._releaseClip(info.path, info.bundle);
         }
 
         if (info.onComplete) {
@@ -310,6 +317,33 @@ export class EffectChannel {
                 console.error(`[EffectChannel] onComplete callback error:`, e);
             }
         }
+    }
+
+    /** 加载音频剪辑资源 */
+    private async _loadClip(path: string, bundle: string): Promise<AudioClip | null> {
+        if (this._loadClipFunc) {
+            return this._loadClipFunc(path, bundle);
+        }
+        const b = assetManager.getBundle(bundle) || resources;
+        return new Promise<AudioClip | null>((resolve) => {
+            b.load(path, AudioClip, (err, asset) => {
+                if (err || !asset) {
+                    resolve(null);
+                } else {
+                    resolve(asset);
+                }
+            });
+        });
+    }
+
+    /** 释放音频剪辑资源引用 */
+    private _releaseClip(path: string, bundle: string): void {
+        if (this._releaseClipFunc) {
+            this._releaseClipFunc(path, bundle);
+            return;
+        }
+        const b = assetManager.getBundle(bundle) || resources;
+        b.release(path, AudioClip);
     }
 
     /****************  并发与节流辅助  ****************/

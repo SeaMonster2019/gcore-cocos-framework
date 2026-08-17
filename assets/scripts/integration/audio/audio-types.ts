@@ -1,4 +1,4 @@
-import { AudioClip } from "cc";
+import { AudioClip, Node } from "cc";
 
 /** 背景音乐播放选项 */
 export interface IAudioMusicOptions {
@@ -46,6 +46,23 @@ export interface IAudioConfigData {
     musicMuted: boolean;
     /** 音效（SFX）音量，取值范围 [0.0, 1.0]，默认值为 1.0 */
     effectVolume: number;
-    /** 音效（SFX）静音开关，true 表示音效静音，默认值为 false */
+/** 音效（SFX）静音开关，true 表示音效静音，默认值为 false */
     effectMuted: boolean;
 }
+
+/** 音频剪辑加载委托函数 */
+export type AudioLoadClipFunc = (path: string, bundle?: string) => Promise<AudioClip | null>;
+
+/** 音频剪辑释放委托函数 */
+export type AudioReleaseClipFunc = (path: string, bundle?: string) => void;
+
+/** 音频管理器初始化参数接口 */
+export interface IAudioInitOptions {
+    /** 挂载音频组件的根节点或父节点 */
+    root: Node;
+    /** 音频资源加载函数（依赖注入） */
+    loadClipFunc?: AudioLoadClipFunc;
+    /** 音频资源释放函数（依赖注入） */
+    releaseClipFunc?: AudioReleaseClipFunc;
+}
+

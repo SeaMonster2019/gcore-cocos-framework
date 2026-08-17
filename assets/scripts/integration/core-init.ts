@@ -1,4 +1,4 @@
-import { _decorator, Canvas, Component, EventHandler, isValid, Node, Prefab } from "cc";
+import { _decorator, AudioClip, Canvas, Component, EventHandler, isValid, Node, Prefab } from "cc";
 import { EventTarget } from "../system/event";
 import { gcoreConfig, gcoreStorage } from "../system/storage";
 import { gcoreAudio } from "./audio";
@@ -42,7 +42,15 @@ export class GCoreInit extends Component {
         gcoreStorage.init();
         gcoreRes.init();
         gcoreConfig.init();
-        gcoreAudio.init(this.root || this.node);
+        gcoreAudio.init({
+            root: this.root || this.node,
+            loadClipFunc: (path: string, bundle: string = "resources") => {
+                return gcoreRes.loadRes<AudioClip>(path, bundle || "resources");
+            },
+            releaseClipFunc: (path: string, bundle: string = "resources") => {
+                gcoreRes.releaseRes(path, bundle || "resources");
+            }
+        });
         gcoreMvc.init({
             root: this.root,
             viewPrefabFunc: (prefab: string, pack: string) => {

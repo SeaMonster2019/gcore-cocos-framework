@@ -2,7 +2,7 @@ import { AudioClip, game, Game, isValid, Node } from "cc";
 import { EffectChannel } from "./audio-channel-effect";
 import { MusicChannel } from "./audio-channel-music";
 import { AudioConfig } from "./audio-config";
-import { IAudioConfigData, IAudioEffectOptions, IAudioMusicOptions } from "./audio-types";
+import { AudioLoadClipFunc, AudioReleaseClipFunc, IAudioConfigData, IAudioEffectOptions, IAudioInitOptions, IAudioMusicOptions } from "./audio-types";
 
 /** GCore 音频管理器
  * 统一门面单例，提供无心智负担的背景音乐、音效、音量控制及系统生命周期管理
@@ -27,10 +27,24 @@ export class AudioMgr {
 
     /****************  生命周期与初始化  ****************/
 
-    /** 初始化音频管理器
-     * @param root 框架根节点或挂载父节点
+    /** 初始化音频管理器（支持依赖注入资源加载委托）
+     * @param optionsOrRoot 框架根节点或初始化配置对象
+     * @param loadClipFunc 音频资源加载委托（当首参为 Node 时有效）
+     * @param releaseClipFunc 音频资源释放委托（当首参为 Node 时有效）
      */
-    public init(root: Node): void {
+    public init(optionsOrRoot: Node | IAudioInitOptions, loadClipFunc?: AudioLoadClipFunc, releaseClipFunc?: AudioReleaseClipFunc): void {
+        let root: Node;
+        let loaderFunc: AudioLoadClipFunc | undefined = loadClipFunc;
+        let releaserFunc: AudioReleaseClipFunc | undefined = releaseClipFunc;
+
+        if (optionsOrRoot instanceof Node) {
+            root = optionsOrRoot;
+        } else {
+            root = optionsOrRoot.root;
+            loaderFunc = optionsOrRoot.loadClipFunc || loaderFunc;
+            releaserFunc = optionsOrRoot.releaseClipFunc || releaserFunc;
+        }
+
         if (!root || !isValid(root)) {
             console.warn("[AudioMgr] 初始化失败：无效的 root 节点");
             return;
@@ -67,9 +81,9 @@ export class AudioMgr {
         root.addChild(host);
         this._audioHostNode = host;
 
-        // 初始化/重新初始化各音频通道
-        this._musicChannel.init(host);
-        this._effectChannel.init(host);
+        // 初始化/重新初始化各音频通道（注入资源加载与释放能力）
+        this._musicChannel.init(host, loaderFunc, releaserFunc);
+        this._effectChannel.init(host, loaderFunc, releaserFunc);
     }
 
     /** 获取挂载音频组件的 Host 节点
