@@ -1,4 +1,4 @@
-import { Rect } from 'cc';
+import { Rect, Vec2 } from 'cc';
 
 /** 表示二维无限延伸的直线；线性方程 y = a * x + b */
 export class Line2D {
@@ -25,10 +25,10 @@ export class Line2D {
      * @param p2 第二点坐标
      * @returns Line2D 实例；当两点 x 相同（垂直线）时返回 null
      */
-    public static fromPoints(p1: {x: number, y: number}, p2: {x: number, y: number}): Line2D | null {
+    public static fromPoints(p1: { x: number, y: number }, p2: { x: number, y: number }): Line2D | null {
         // 两点 x 相同则斜率不存在（垂直线），返回 null 由调用者决定如何处理
         if (p1.x === p2.x) {
-            return null; 
+            return null;
         }
         const a = (p2.y - p1.y) / (p2.x - p1.x);
         const b = p1.y - a * p1.x;
@@ -83,5 +83,55 @@ export class MathUtil {
             point.y + halfH < rect.yMin ||
             point.y - halfH > rect.yMax
         );
+    }
+
+    /********************************************  多边形计算方法  ********************************************/
+
+    /** 计算多边形的包围盒
+     * @param points 多边形顶点数组
+     * @returns 包围盒边界值 { minX, minY, maxX, maxY }
+     */
+    public static getPolygonBounds(points: Vec2[]): { minX: number; minY: number; maxX: number; maxY: number } {
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i];
+            if (p.x < minX) minX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y > maxY) maxY = p.y;
+        }
+
+        return { minX, minY, maxX, maxY };
+    }
+
+    /** 判断点是否在多边形内部（射线法）
+     * @param point 待检测的点
+     * @param points 多边形顶点数组
+     * @returns 点是否在多边形内部
+     */
+    public static isPointInPolygon(point: Vec2, points: Vec2[]): boolean {
+        let inside = false;
+        const x = point.x;
+        const y = point.y;
+        const len = points.length;
+
+        for (let i = 0, j = len - 1; i < len; j = i++) {
+            const xi = points[i].x;
+            const yi = points[i].y;
+            const xj = points[j].x;
+            const yj = points[j].y;
+
+            // 射线法：判断点是否在多边形边的交叉点
+            const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) {
+                inside = !inside;
+            }
+        }
+
+        return inside;
     }
 }
