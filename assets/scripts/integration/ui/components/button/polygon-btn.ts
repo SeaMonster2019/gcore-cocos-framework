@@ -98,6 +98,55 @@ export class PolygonBtn extends Button {
         // 判断触摸点是否在多边形内
         if (MathUtil.isPointInPolygon(this._localPoint, this.polygon.points)) {
             super._onTouchBegan(event);
+        } else {
+            // 触摸点不在多边形内时，阻止事件被吞噬，让事件穿透到下层节点
+            event.preventSwallow = true;
         }
+    }
+
+    /** 触摸结束事件处理 */
+    override _onTouchEnded(event?: EventTouch): void {
+        if (!event) {
+            return;
+        }
+
+        if (!this.polygon || this.polygon.points.length === 0) {
+            super._onTouchEnded(event);
+            return;
+        }
+
+        const uiTrans = this.node.getComponent(UITransform);
+        if (!uiTrans) {
+            super._onTouchEnded(event);
+            return;
+        }
+
+        // 将触摸坐标转换为节点本地坐标
+        const touchPos = event.getUILocation();
+        uiTrans.convertToNodeSpaceAR(new Vec3(touchPos.x, touchPos.y, 0), this._touchPos);
+        this._localPoint.set(this._touchPos.x, this._touchPos.y);
+
+        // 判断触摸点是否在多边形内
+        if (MathUtil.isPointInPolygon(this._localPoint, this.polygon.points)) {
+            super._onTouchEnded(event);
+        } else {
+            // 触摸点不在多边形内时，阻止事件被吞噬，让事件穿透到下层节点
+            event.preventSwallow = true;
+        }
+    }
+
+    /** 触摸取消事件处理 */
+    override _onTouchCancel(event?: EventTouch): void {
+        if (!event) {
+            return;
+        }
+
+        if (!this.polygon || this.polygon.points.length === 0) {
+            super._onTouchCancel(event);
+            return;
+        }
+
+        // 触摸取消时，阻止事件被吞噬
+        event.preventSwallow = true;
     }
 }
